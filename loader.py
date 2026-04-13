@@ -1,5 +1,7 @@
 import argparse
 import re
+import tomllib
+from dataclasses import dataclass, field
 from typing import cast
 from typing import Iterable
 from urllib.parse import urlparse
@@ -19,41 +21,42 @@ DATE_FIELD_CANDIDATES = [
 TITLE_FIELD_CANDIDATES = ["title", "headline"]
 TEXT_FIELD_CANDIDATES = ["plain_text", "text", "content", "article_text", "body"]
 PUBLISHER_FIELD_CANDIDATES = ["publisher", "source", "domain", "source_domain"]
-# Keywords that are specific enough to match anywhere in title or body.
-NICE_TRUCK_ATTACK_KEYWORDS_ANYWHERE = [
-	"nice truck",
-	"nice attack",
-	"attack in nice",
-	"massacre in nice",
-	"shooting in nice",
-	"nice massacre",
-	"nice terror",
-	"truck attack in nice",
-	"lorry attack in nice",
-	"nice lorry",
-	"lorry in nice",
-	"promenade des anglais",
-	"bastille day attack",
-	"bastille day truck",
-	"bastille day lorry",
-	"bastille day massacre",
-	"14 juillet attack",
-	"14 juillet attentat",
-	"attentat de nice",
-	"terror attack in nice",
-	"terrorist attack in nice",
-]
 
-# Keywords that are too generic for body-text matching; only matched against the title.
-NICE_TRUCK_ATTACK_KEYWORDS_TITLE_ONLY = [
-	"truck ploughed",
-	"truck plowed",
-	"lorry ploughed",
-	"lorry plowed",
-	"truck rammed",
-	"lorry rammed",
-	"nice, france",
-]
+
+@dataclass
+class EventConfig:
+	"""All event-specific parameters loaded from a TOML config file."""
+
+	name: str
+	ccnews_year: str
+	publish_cutoff: str
+	output_prefix: str
+	keywords_anywhere: list[str] = field(default_factory=list)
+	keywords_title_only: list[str] = field(default_factory=list)
+
+
+def load_event_config(path: Path) -> EventConfig:
+	with open(path, "rb") as f:
+		data = tomllib.load(f)
+
+	event = data.get("event", {})
+	keywords = data.get("keywords", {})
+
+	required = {"name", "ccnews_year", "publish_cutoff", "output_prefix"}
+	missing = required - set(event.keys())
+	if missing:
+		raise ValueError(
+			f"Event config {path} is missing required [event] keys: {sorted(missing)}"
+		)
+
+	return EventConfig(
+		name=event["name"],
+		ccnews_year=str(event["ccnews_year"]),
+		publish_cutoff=event["publish_cutoff"],
+		output_prefix=event["output_prefix"],
+		keywords_anywhere=keywords.get("anywhere", []),
+		keywords_title_only=keywords.get("title_only", []),
+	)
 
 
 def normalize_domain(value: object) -> str:
@@ -111,10 +114,12 @@ def as_lower_text(value: object) -> str:
 	return str(value).strip().lower()
 
 
-def is_nice_truck_attack_related(
+def is_event_related(
 	row: dict[str, object],
 	title_field: str | None,
 	text_field: str | None,
+	keywords_anywhere: list[str],
+	keywords_title_only: list[str],
 ) -> bool:
 	title_text = as_lower_text(row.get(title_field)) if title_field else ""
 	body_text = as_lower_text(row.get(text_field)) if text_field else ""
@@ -122,10 +127,10 @@ def is_nice_truck_attack_related(
 	if not full_text.strip():
 		return False
 
-	if any(kw in full_text for kw in NICE_TRUCK_ATTACK_KEYWORDS_ANYWHERE):
+	if any(kw in full_text for kw in keywords_anywhere):
 		return True
 
-	if any(kw in title_text for kw in NICE_TRUCK_ATTACK_KEYWORDS_TITLE_ONLY):
+	if any(kw in title_text for kw in keywords_title_only):
 		return True
 
 	return False
@@ -197,6 +202,7 @@ def write_joined_shards(
 
 
 def run(
+	event_config: EventConfig,
 	sample_size: int,
 	publish_cutoff: str,
 	rows_per_file: int,
@@ -210,9 +216,17 @@ def run(
 	reliability_df = load_reliability_frame()
 	print(f"Loaded reliability rows: {len(reliability_df)}")
 
+	print(f"Event: {event_config.name}")
+	print(f"CCNews year: {event_config.ccnews_year}")
+	print(f"Publish cutoff: {publish_cutoff}")
+	print(
+		f"Keywords: {len(event_config.keywords_anywhere)} anywhere, "
+		f"{len(event_config.keywords_title_only)} title-only"
+	)
+
 	ccnews_dataset = load_dataset(
 		"stanford-oval/ccnews",
-		"2016",
+		event_config.ccnews_year,
 		split="train",
 		streaming=True,
 	)
@@ -228,7 +242,7 @@ def run(
 	total_after_topic_filter = 0
 	filtered_rows: list[dict[str, object]] = []
 
-	print("Streaming CCNews 2016 and filtering for post-June Nice truck attack coverage...")
+	print(f"Streaming CCNews {event_config.ccnews_year} and filtering for event coverage...")
 	for row in ccnews_iterable:
 		if sample_size > 0 and total_scanned >= sample_size:
 			break
@@ -265,7 +279,13 @@ def run(
 			continue
 		total_after_date_filter += 1
 
-		if not is_nice_truck_attack_related(row, title_field=title_field, text_field=text_field):
+		if not is_event_related(
+			row,
+			title_field=title_field,
+			text_field=text_field,
+			keywords_anywhere=event_config.keywords_anywhere,
+			keywords_title_only=event_config.keywords_title_only,
+		):
 			continue
 		total_after_topic_filter += 1
 
@@ -326,7 +346,7 @@ def run(
 	print("Completed.")
 	print(f"CCNews rows scanned: {total_scanned}")
 	print(f"Rows after date filter: {total_after_date_filter}")
-	print(f"Rows after Nice-attack topic filter: {total_after_topic_filter}")
+	print(f"Rows after topic filter: {total_after_topic_filter}")
 	print(f"Rows with non-null reliability score: {len(joined_df)}")
 	print(f"Joined rows written: {total_written}")
 	print(f"Output directory: {output_dir}")
@@ -335,9 +355,15 @@ def run(
 def parse_args() -> argparse.Namespace:
 	parser = argparse.ArgumentParser(
 		description=(
-			"Stream ccnews 2016, keep post-June Nice truck attack related rows, "
+			"Stream a CCNews year, filter by event keywords from a TOML config, "
 			"left-join with news_media_reliability, drop rows without score, and write CSV output."
 		)
+	)
+	parser.add_argument(
+		"--event-config",
+		type=Path,
+		required=True,
+		help="Path to a TOML event config file (see events/ directory for examples).",
 	)
 	parser.add_argument(
 		"--sample-size",
@@ -348,8 +374,8 @@ def parse_args() -> argparse.Namespace:
 	parser.add_argument(
 		"--publish-cutoff",
 		type=str,
-		default="2016-07-14",
-		help="Keep only rows with publication date on/after this value (UTC).",
+		default=None,
+		help="Override the publish cutoff date from the event config (UTC, e.g. 2016-07-14).",
 	)
 	parser.add_argument(
 		"--rows-per-file",
@@ -366,19 +392,25 @@ def parse_args() -> argparse.Namespace:
 	parser.add_argument(
 		"--output-prefix",
 		type=str,
-		default="joined_ccnews_reliability",
-		help="Prefix for output CSV shard names.",
+		default=None,
+		help="Override the output prefix from the event config.",
 	)
 	return parser.parse_args()
 
 
 if __name__ == "__main__":
 	args = parse_args()
+	event_config = load_event_config(args.event_config)
+
+	# CLI flags override config file values when explicitly provided.
+	publish_cutoff = args.publish_cutoff or event_config.publish_cutoff
+	output_prefix = args.output_prefix or event_config.output_prefix
+
 	run(
+		event_config=event_config,
 		sample_size=args.sample_size,
-		publish_cutoff=args.publish_cutoff,
+		publish_cutoff=publish_cutoff,
 		rows_per_file=args.rows_per_file,
 		output_dir=args.output_dir,
-		output_prefix=args.output_prefix,
+		output_prefix=output_prefix,
 	)
-

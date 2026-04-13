@@ -1,0 +1,36 @@
+[event]
+name           = "Zika Virus Outbreak 2016"
+ccnews_year    = "2016"
+publish_cutoff = "2016-01-01"
+output_prefix  = "zika_outbreak_2016_scored"
+
+[keywords]
+# Specific enough to match anywhere in title or body text.
+anywhere = [
+    "zika virus",
+    "zika outbreak",
+    "zika epidemic",
+    "zika infection",
+    "zika vaccine",
+    "zika microcephaly",
+    "zika mosquito",
+    "zika pregnant",
+    "zika transmission",
+    "zika aedes",
+    "aedes aegypti",
+    "microcephaly outbreak",
+    "zika brasil",
+    "zika brazil",
+    "zika paho",
+    "zika who",
+    "zika cdc",
+    "zika travel",
+    "zika sexual",
+    "zika birth defect",
+]
+
+# Too generic for body text — only matched against article titles.
+title_only = [
+    "zika",
+    "microcephaly",
+]

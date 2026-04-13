@@ -1,0 +1,42 @@
+[event]
+name           = "Nice Truck Attack 2016"
+ccnews_year    = "2016"
+publish_cutoff = "2016-07-14"
+output_prefix  = "nice_attack_2016_scored"
+
+[keywords]
+# Specific enough to match anywhere in title or body text.
+anywhere = [
+    "nice truck",
+    "nice attack",
+    "attack in nice",
+    "massacre in nice",
+    "shooting in nice",
+    "nice massacre",
+    "nice terror",
+    "truck attack in nice",
+    "lorry attack in nice",
+    "nice lorry",
+    "lorry in nice",
+    "promenade des anglais",
+    "bastille day attack",
+    "bastille day truck",
+    "bastille day lorry",
+    "bastille day massacre",
+    "14 juillet attack",
+    "14 juillet attentat",
+    "attentat de nice",
+    "terror attack in nice",
+    "terrorist attack in nice",
+]
+
+# Too generic for body text — only matched against article titles.
+title_only = [
+    "truck ploughed",
+    "truck plowed",
+    "lorry ploughed",
+    "lorry plowed",
+    "truck rammed",
+    "lorry rammed",
+    "nice, france",
+]
