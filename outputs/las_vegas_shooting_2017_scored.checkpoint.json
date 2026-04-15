@@ -1,0 +1,13 @@
+{
+  "ccnews_year": "2017",
+  "event_name": "Las Vegas Shooting 2017",
+  "file_index": 1,
+  "output_prefix": "las_vegas_shooting_2017_scored",
+  "publish_cutoff": "2017-10-01",
+  "rows_in_current_file": 411,
+  "total_after_date_filter": 1612088,
+  "total_after_topic_filter": 5000,
+  "total_scanned": 1659975,
+  "total_written": 411,
+  "version": 1
+}

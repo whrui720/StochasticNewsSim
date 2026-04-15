@@ -1,0 +1,43 @@
+[event]
+name           = "Las Vegas Shooting 2017"
+ccnews_year    = "2017"
+publish_cutoff = "2017-10-01"
+output_prefix  = "las_vegas_shooting_2017_scored"
+
+[keywords]
+# Specific enough to match anywhere in title or body text.
+anywhere = [
+    "las vegas shooting",
+    "las vegas gunman",
+    "las vegas massacre",
+    "las vegas attack",
+    "las vegas shooter",
+    "las vegas strip shooting",
+    "mandalay bay shooting",
+    "mandalay bay gunman",
+    "mandalay bay attack",
+    "route 91 harvest",
+    "stephen paddock",
+    "country music festival shooting",
+    "country music festival attack",
+    "las vegas music festival shooting",
+    "deadliest mass shooting",
+    "deadliest shooting in u.s. history",
+    "deadliest shooting in american history",
+    "las vegas concert shooting",
+    "las vegas festival shooting",
+    "shooting at mandalay",
+    "sniper las vegas",
+    "bump stock",
+    "bump stocks",
+]
+
+# Too generic for body text — only matched against article titles.
+title_only = [
+    "las vegas",
+    "mandalay bay",
+    "paddock",
+    "vegas shooting",
+    "vegas gunman",
+    "vegas massacre",
+]

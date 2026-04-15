@@ -1,0 +1,66 @@
+[event]
+name           = "Syrian Civil War 2016"
+ccnews_year    = "2016"
+publish_cutoff = "2016-01-01"
+output_prefix  = "syrian_civil_war_2016_scored"
+
+[keywords]
+# Specific enough to match anywhere in title or body text.
+anywhere = [
+    "syrian civil war",
+    "syrian conflict",
+    "bashar al-assad",
+    "bashar assad",
+    "free syrian army",
+    "syrian rebel",
+    "syrian rebels",
+    "syrian opposition",
+    "syrian government forces",
+    "syrian army offensive",
+    "aleppo siege",
+    "siege of aleppo",
+    "battle of aleppo",
+    "fall of aleppo",
+    "jabhat al-nusra",
+    "al-nusra front",
+    "nusra front",
+    "jabhat fateh al-sham",
+    "syrian democratic forces",
+    "ypg syria",
+    "kurdish forces in syria",
+    "russian airstrikes in syria",
+    "russian intervention in syria",
+    "russian bombing in syria",
+    "hezbollah in syria",
+    "ceasefire in syria",
+    "syrian ceasefire",
+    "chemical attack in syria",
+    "chemical weapons in syria",
+    "barrel bomb",
+    "barrel bombs",
+    "humanitarian corridor syria",
+    "humanitarian crisis in syria",
+    "idlib province",
+    "deir ez-zor",
+    "eastern aleppo",
+    "west aleppo",
+    "raqqa syria",
+    "raqqa, syria",
+    "displaced syrians",
+    "syrian refugees",
+    "syrian regime",
+    "regime forces in syria",
+    "opposition forces in syria",
+    "iran syria proxy",
+    "iran-backed forces in syria",
+]
+
+# Too generic for body text — only matched against article titles.
+title_only = [
+    "syria",
+    "syrian",
+    "damascus",
+    "aleppo",
+    "idlib",
+    "raqqa",
+]

@@ -1,4 +1,5 @@
 import argparse
+import json
 import re
 import tomllib
 from dataclasses import dataclass, field
@@ -170,6 +171,113 @@ def clear_previous_outputs(output_dir: Path, output_prefix: str) -> None:
 		file_path.unlink()
 
 
+def get_checkpoint_path(output_dir: Path, output_prefix: str) -> Path:
+	return output_dir / f"{output_prefix}.checkpoint.json"
+
+
+def load_checkpoint(path: Path) -> dict[str, object] | None:
+	if not path.exists():
+		return None
+
+	with open(path, "r", encoding="utf-8") as f:
+		checkpoint = json.load(f)
+
+	if not isinstance(checkpoint, dict):
+		raise ValueError(f"Checkpoint file {path} is not a JSON object.")
+
+	return checkpoint
+
+
+def save_checkpoint(path: Path, checkpoint: dict[str, object]) -> None:
+	tmp_path = path.with_suffix(path.suffix + ".tmp")
+	with open(tmp_path, "w", encoding="utf-8") as f:
+		json.dump(checkpoint, f, indent=2, sort_keys=True)
+		f.write("\n")
+	tmp_path.replace(path)
+
+
+def checkpoint_int(checkpoint: dict[str, object], key: str) -> int:
+	value = checkpoint.get(key)
+	if not isinstance(value, int):
+		raise ValueError(f"Checkpoint key '{key}' is missing or not an integer.")
+	return value
+
+
+def build_checkpoint_data(
+	event_config: EventConfig,
+	publish_cutoff: str,
+	output_prefix: str,
+	total_scanned: int,
+	total_after_date_filter: int,
+	total_after_topic_filter: int,
+	total_written: int,
+	file_index: int,
+	rows_in_current_file: int,
+) -> dict[str, object]:
+	return {
+		"version": 1,
+		"event_name": event_config.name,
+		"ccnews_year": event_config.ccnews_year,
+		"publish_cutoff": publish_cutoff,
+		"output_prefix": output_prefix,
+		"total_scanned": total_scanned,
+		"total_after_date_filter": total_after_date_filter,
+		"total_after_topic_filter": total_after_topic_filter,
+		"total_written": total_written,
+		"file_index": file_index,
+		"rows_in_current_file": rows_in_current_file,
+	}
+
+
+def flush_filtered_rows(
+	filtered_rows: list[dict[str, object]],
+	reliability_df: pd.DataFrame,
+	output_dir: Path,
+	output_prefix: str,
+	rows_per_file: int,
+	file_index: int,
+	rows_in_current_file: int,
+) -> tuple[int, int, int]:
+	if not filtered_rows:
+		return file_index, rows_in_current_file, 0
+
+	filtered_df = pd.DataFrame(filtered_rows)
+	filtered_df["_join_domain"] = filtered_df["_publisher_resolved"].map(normalize_domain)
+
+	joined_df = filtered_df.merge(
+		reliability_df,
+		on="_join_domain",
+		how="left",
+		suffixes=("", "_reliability"),
+	)
+
+	if "newsguard_score" not in joined_df.columns:
+		raise ValueError(
+			"Expected 'newsguard_score' column in joined data from "
+			"news_media_reliability dataset."
+		)
+
+	joined_df = joined_df.dropna(subset=["newsguard_score"]).copy()
+	if joined_df.empty:
+		return file_index, rows_in_current_file, 0
+
+	# Sort each flushed chunk for readability; full-dataset sort would require buffering all rows.
+	joined_df = joined_df.sort_values(by="_publish_dt", ascending=True, kind="stable")
+	joined_df["publish_datetime_utc"] = pd.to_datetime(
+		joined_df["_publish_dt"],
+		utc=True,
+	).dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+	return write_joined_shards(
+		joined_df=joined_df,
+		output_dir=output_dir,
+		output_prefix=output_prefix,
+		rows_per_file=rows_per_file,
+		file_index=file_index,
+		rows_in_current_file=rows_in_current_file,
+	)
+
+
 def write_joined_shards(
 	joined_df: pd.DataFrame,
 	output_dir: Path,
@@ -206,11 +314,64 @@ def run(
 	sample_size: int,
 	publish_cutoff: str,
 	rows_per_file: int,
+	flush_every: int,
+	resume: bool,
 	output_dir: Path,
 	output_prefix: str,
 ) -> None:
+	if flush_every <= 0:
+		raise ValueError("--flush-every must be greater than 0.")
+
 	output_dir.mkdir(parents=True, exist_ok=True)
-	clear_previous_outputs(output_dir, output_prefix)
+	checkpoint_path = get_checkpoint_path(output_dir, output_prefix)
+
+	total_scanned = 0
+	total_after_date_filter = 0
+	total_after_topic_filter = 0
+	total_written = 0
+	file_index = 1
+	rows_in_current_file = 0
+	resume_skip_remaining = 0
+
+	if resume:
+		checkpoint = load_checkpoint(checkpoint_path)
+		if checkpoint is None:
+			raise ValueError(
+				f"Cannot resume: checkpoint file not found at {checkpoint_path}."
+			)
+
+		if checkpoint.get("ccnews_year") != event_config.ccnews_year:
+			raise ValueError(
+				"Checkpoint ccnews_year does not match current event config. "
+				"Use a matching config or run without --resume."
+			)
+		if checkpoint.get("publish_cutoff") != publish_cutoff:
+			raise ValueError(
+				"Checkpoint publish_cutoff does not match current run settings. "
+				"Use the same cutoff or run without --resume."
+			)
+		if checkpoint.get("output_prefix") != output_prefix:
+			raise ValueError(
+				"Checkpoint output_prefix does not match current run settings. "
+				"Use the same prefix or run without --resume."
+			)
+
+		total_scanned = checkpoint_int(checkpoint, "total_scanned")
+		total_after_date_filter = checkpoint_int(checkpoint, "total_after_date_filter")
+		total_after_topic_filter = checkpoint_int(checkpoint, "total_after_topic_filter")
+		total_written = checkpoint_int(checkpoint, "total_written")
+		file_index = checkpoint_int(checkpoint, "file_index")
+		rows_in_current_file = checkpoint_int(checkpoint, "rows_in_current_file")
+		resume_skip_remaining = total_scanned
+
+		print(f"Resuming from checkpoint: {checkpoint_path}")
+		print(f"Rows previously scanned: {total_scanned}")
+		print(f"Rows previously written: {total_written}")
+	else:
+		clear_previous_outputs(output_dir, output_prefix)
+		if checkpoint_path.exists():
+			checkpoint_path.unlink()
+
 	cutoff_ts = pd.Timestamp(publish_cutoff, tz="UTC")
 
 	reliability_df = load_reliability_frame()
@@ -236,16 +397,16 @@ def run(
 	title_field: str | None = None
 	text_field: str | None = None
 	publisher_field: str | None = None
-
-	total_scanned = 0
-	total_after_date_filter = 0
-	total_after_topic_filter = 0
-	filtered_rows: list[dict[str, object]] = []
+	filtered_rows_buffer: list[dict[str, object]] = []
 
 	print(f"Streaming CCNews {event_config.ccnews_year} and filtering for event coverage...")
 	for row in ccnews_iterable:
 		if sample_size > 0 and total_scanned >= sample_size:
 			break
+
+		if resume_skip_remaining > 0:
+			resume_skip_remaining -= 1
+			continue
 
 		total_scanned += 1
 
@@ -295,59 +456,73 @@ def run(
 			row,
 			publisher_field=publisher_field,
 		)
-		filtered_rows.append(row_copy)
+		filtered_rows_buffer.append(row_copy)
+
+		if len(filtered_rows_buffer) >= flush_every:
+			file_index, rows_in_current_file, rows_written_now = flush_filtered_rows(
+				filtered_rows=filtered_rows_buffer,
+				reliability_df=reliability_df,
+				output_dir=output_dir,
+				output_prefix=output_prefix,
+				rows_per_file=rows_per_file,
+				file_index=file_index,
+				rows_in_current_file=rows_in_current_file,
+			)
+			total_written += rows_written_now
+			filtered_rows_buffer.clear()
+			save_checkpoint(
+				checkpoint_path,
+				build_checkpoint_data(
+					event_config=event_config,
+					publish_cutoff=publish_cutoff,
+					output_prefix=output_prefix,
+					total_scanned=total_scanned,
+					total_after_date_filter=total_after_date_filter,
+					total_after_topic_filter=total_after_topic_filter,
+					total_written=total_written,
+					file_index=file_index,
+					rows_in_current_file=rows_in_current_file,
+				),
+			)
 
 		if total_scanned % 100_000 == 0:
 			print(
 				f"Scanned: {total_scanned} | After date filter: {total_after_date_filter} "
 				f"| After topic filter: {total_after_topic_filter}"
 			)
+			save_checkpoint(
+				checkpoint_path,
+				build_checkpoint_data(
+					event_config=event_config,
+					publish_cutoff=publish_cutoff,
+					output_prefix=output_prefix,
+					total_scanned=total_scanned,
+					total_after_date_filter=total_after_date_filter,
+					total_after_topic_filter=total_after_topic_filter,
+					total_written=total_written,
+					file_index=file_index,
+					rows_in_current_file=rows_in_current_file,
+				),
+			)
 
-	if not filtered_rows:
-		print("Completed. No CCNews rows matched date/topic filters.")
-		print(f"CCNews rows scanned: {total_scanned}")
-		print(f"Output directory: {output_dir}")
-		return
-
-	filtered_df = pd.DataFrame(filtered_rows)
-	filtered_df["_join_domain"] = filtered_df["_publisher_resolved"].map(normalize_domain)
-
-	joined_df = filtered_df.merge(
-		reliability_df,
-		on="_join_domain",
-		how="left",
-		suffixes=("", "_reliability"),
-	)
-
-	if "newsguard_score" not in joined_df.columns:
-		raise ValueError(
-			"Expected 'newsguard_score' column in joined data from "
-			"news_media_reliability dataset."
-		)
-
-	joined_df = joined_df.dropna(subset=["newsguard_score"]).copy()
-	joined_df = joined_df.sort_values(by="_publish_dt", ascending=True, kind="stable")
-	joined_df["publish_datetime_utc"] = pd.to_datetime(
-		joined_df["_publish_dt"],
-		utc=True,
-	).dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-	file_index, rows_in_current_file, total_written = write_joined_shards(
-		joined_df=joined_df,
+	file_index, rows_in_current_file, rows_written_now = flush_filtered_rows(
+		filtered_rows=filtered_rows_buffer,
+		reliability_df=reliability_df,
 		output_dir=output_dir,
 		output_prefix=output_prefix,
 		rows_per_file=rows_per_file,
-		file_index=1,
-		rows_in_current_file=0,
+		file_index=file_index,
+		rows_in_current_file=rows_in_current_file,
 	)
-	_ = file_index
-	_ = rows_in_current_file
+	total_written += rows_written_now
+
+	if checkpoint_path.exists():
+		checkpoint_path.unlink()
 
 	print("Completed.")
 	print(f"CCNews rows scanned: {total_scanned}")
 	print(f"Rows after date filter: {total_after_date_filter}")
 	print(f"Rows after topic filter: {total_after_topic_filter}")
-	print(f"Rows with non-null reliability score: {len(joined_df)}")
 	print(f"Joined rows written: {total_written}")
 	print(f"Output directory: {output_dir}")
 
@@ -384,6 +559,23 @@ def parse_args() -> argparse.Namespace:
 		help="Maximum number of rows per output CSV shard.",
 	)
 	parser.add_argument(
+		"--flush-every",
+		type=int,
+		default=5_000,
+		help=(
+			"Flush every N event-matching rows to output CSV and checkpoint file "
+			"for crash-safe progress."
+		),
+	)
+	parser.add_argument(
+		"--resume",
+		action="store_true",
+		help=(
+			"Resume from a previous interrupted run by loading the checkpoint and "
+			"continuing output writes."
+		),
+	)
+	parser.add_argument(
 		"--output-dir",
 		type=Path,
 		default=Path("outputs"),
@@ -411,6 +603,8 @@ if __name__ == "__main__":
 		sample_size=args.sample_size,
 		publish_cutoff=publish_cutoff,
 		rows_per_file=args.rows_per_file,
+		flush_every=args.flush_every,
+		resume=args.resume,
 		output_dir=args.output_dir,
 		output_prefix=output_prefix,
 	)
