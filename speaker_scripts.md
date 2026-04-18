@@ -14,9 +14,9 @@ Random presenter assignment (seeded so it is fixed):
 | 4 | Part A — Hybrid Winner | Ruthesh Thavamani |
 | 5 | Part B — Setup | Sriyan Madugula |
 | 6 | Part B — Multivariate Hawkes | Harry Wang |
-| 7 | Part B — Markov Variants | Ruthesh Thavamani |
+| 7 | Part B — Markov Variants | Ruthesh Thavamani | Sriyan
 | 8 | Part B — Comparison | Sriyan Madugula |
-| 9 | Part B — Interpretation | Harry Wang |
+| 9 | Part B — Interpretation | Harry Wang | Sriyan | Ruthesh
 | 10 | Conclusions and Next Steps | Ruthesh Thavamani |
 
 ---
