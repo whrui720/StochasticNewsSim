@@ -1,6 +1,8 @@
 # Part A: Stochastic News Simulation — Model Fitting Report
 ## Las Vegas Shooting 2017 Dataset
 
+> **Update:** §7 adds a hybrid IHP+Hawkes model that outperforms all three base models (AIC = 752.80 vs IHP's 1032.29). The hybrid decomposes the news cycle into an exogenous trigger (IHP term) and endogenous self-excitation (Hawkes term) — see §7 for details.
+
 ---
 
 ## 1. Dataset Overview
@@ -196,34 +198,157 @@ The Hawkes process would outperform IHP if:
 
 ---
 
-## 7. Generated Output Files
+## 7. Hybrid IHP + Hawkes Model
+
+Section 5 conjectured that a hybrid combining IHP's exogenous decay with Hawkes self-excitation would outperform both pure models. This section confirms and quantifies that claim.
+
+### 7.1 Model Specifications
+
+Two hybrid variants are fit:
+
+**Hybrid (AR-1 limit)** — 4 parameters:
+$$\lambda(t) = A \cdot e^{-\beta_0 t} + c + n \cdot N(t-1)$$
+
+Adds the `n·N(t−1)` self-excitation term (the Hawkes AR-1 limit from §3) on top of the IHP deterministic decay. At `t=0`, there are no past events, so `λ(0) = A + c` — the hybrid can still absorb the day-0 exogenous shock.
+
+**Hybrid (full)** — 5 parameters:
+$$\lambda(t) = A \cdot e^{-\beta_0 t} + c + \alpha \cdot R(t), \qquad R(t) = e^{-\beta_1}[R(t-1) + N(t-1)]$$
+
+Full exponential-kernel Hawkes history `R(t)` instead of a single-lag shortcut. `β₁` is a free parameter (unlike pure Hawkes, where it was unidentifiable because no competing fit mechanism existed). The branching ratio is `n = α / (exp(β₁) − 1)`.
+
+Both are fit by maximum conditional Poisson log-likelihood with the same `gammaln` normalisation as in §3, from a grid of starting points to avoid local minima.
+
+### 7.2 Fitted Parameters
+
+| Model | Parameters | Values |
+|---|---|---|
+| Hybrid (AR-1)  | A, β₀, c, n              | A=486.78, β₀=2.217, c=2.208, n=0.7248 |
+| Hybrid (full)  | A, β₀, c, α, β₁          | A=538.23, β₀=0.397, c=1.597, α=0.0305, β₁=0.0848 (n=0.344) |
+
+**Hybrid-AR1 interpretation**: The IHP term effectively collapses to a one-day spike (`β₀ = 2.22` → half-life 0.31 days, so `A·exp(−β₀·1) ≈ 53`, and by day 2 ≈ 6). The model attributes the 489 articles on day 0 almost entirely to the exogenous event, then hands propagation off to the self-excitation term with branching ratio `n = 0.725` — higher than the pure Hawkes `n = 0.614`, because the hybrid isn't being forced to overfit day 0 through branching. This is a clean decomposition: **IHP term = instantaneous exogenous trigger, Hawkes term = endogenous amplification and decay**.
+
+**Hybrid-full interpretation**: Different regime. The exponential kernel has `β₁ = 0.085`, giving a Hawkes memory half-life of `ln(2)/β₁ ≈ 8.2 days` — much longer than one day. The IHP decay `β₀ = 0.397` (half-life 1.75 days) handles the fast initial decline; the long-memory Hawkes term (`n = 0.344`) carries the longer tail. Two separable timescales: fast exogenous decay + slow endogenous persistence.
+
+### 7.3 Full Comparison — All Five Models
+
+| Model | # Params | Log-Likelihood | AIC | BIC | Pearson Var |
+|---|---|---|---|---|---|
+| Standard Poisson         | 1 | −3835.11 | 7672.22 | 7674.73 | 196.26 |
+| Inhomogeneous Poisson    | 3 |   −513.15 | 1032.29 | 1039.82 |   8.52 |
+| Hawkes (AR-1)            | 2 | −2003.81 | 4011.62 | 4016.65 | 225.10 |
+| **Hybrid IHP+Hawkes (AR-1)** | 4 |   −388.79 |  785.59 |  795.63 |   5.10 |
+| **Hybrid IHP+Hawkes (full)** | 5 | **−371.40** | **752.80** | **765.35** | **4.48** |
+
+**The full Hybrid wins on every criterion.** Against the previous best (pure IHP):
+
+- ΔAIC (Hybrid-AR1 − IHP)  = **−246.70**
+- ΔAIC (Hybrid-full − IHP) = **−279.49**
+- ΔBIC (Hybrid-full − IHP) = **−274.47**
+
+Pearson dispersion drops from 8.52 (IHP) to 4.48 (Hybrid-full) — roughly halved, though still above the Poisson ideal of 1 (the residual overdispersion is daily count-noise unexplained by smooth deterministic rates).
+
+### 7.4 Likelihood Ratio Tests
+
+Hybrid-AR1 strictly nests IHP (set `n=0`) and nests Hawkes-AR1 (drop the IHP term, replace `c` with `μ`). Hybrid-full strictly nests Hybrid-AR1 (take `β₁ → ∞`).
+
+| Comparison | LR Statistic | df | p-value |
+|---|---|---|---|
+| IHP vs Hybrid-AR1         | 248.70 | 1 | ≈ 0 |
+| Hybrid-AR1 vs Hybrid-full |  34.79 | 1 | 3.7 × 10⁻⁹ |
+
+Both additions are massively significant. The richer Hawkes kernel (β₁ finite rather than the AR-1 limit) pays for its extra parameter many times over.
+
+### 7.5 Day-0 Decomposition Revisited
+
+Section 5 showed that Hawkes lost to IHP because Hawkes predicts `λ(0) = μ` (~11.5) when the observation is 489. The hybrid fixes this structurally:
+
+| Model | λ(0) | Day-0 log-lik |
+|---|---|---|
+| IHP              | 450.6 |    −5.60 |
+| Hawkes (AR-1)    |  11.5 | −1360.13 |
+| Hybrid (AR-1)    | 489.0 |    **−4.02** |
+| Hybrid (full)    | 539.8 |    −6.49 |
+
+Hybrid-AR1 actually lands *exactly* on the observed 489 (`A + c = 486.78 + 2.21 = 488.99`) — the optimiser effectively fits the initial amplitude to the observation, then lets self-excitation handle the rest of the series. Hybrid-full slightly overshoots on day 0 but gains elsewhere through the richer kernel.
+
+### 7.6 Why the Hybrid Works
+
+The hybrid is not just a flexible regression — it matches the underlying mechanism. The Las Vegas shooting news cycle has two distinct processes operating at different timescales:
+
+1. **Exogenous trigger** — the event itself generates a first-day wave of direct coverage. This is not triggered by prior articles; it is a response to the shooting. Modelled by `A·exp(−β₀·t) + c`.
+2. **Endogenous amplification** — articles beget articles: editorials respond to news reports, opinion pieces respond to editorials, counter-arguments respond to opinions. Modelled by `α·R(t)` / `n·N(t−1)`.
+
+Pure IHP captures only (1); pure Hawkes captures only (2) and fails on day 0. The hybrid captures both and outperforms both.
+
+### 7.7 Known Limitation — Weekly Seasonality
+
+Neither hybrid variant expresses **day-of-week structure**, which the data clearly exhibits. Diagnostics on the IHP-model Pearson residuals show strong weekly periodicity:
+
+- **Day-of-week mean Pearson residuals**: Wed +2.07, Thu +1.26, Fri +0.42, Mon −0.05, Tue −0.11, Sun −1.63, Sat −1.94. Weekdays (especially Wed/Thu) systematically exceed the smooth rate; weekends fall well below it.
+- **Residual autocorrelation**: lag-1 ρ = 0.59, **lag-7 ρ = 0.61**, lag-14 ρ = 0.39. The lag-7 spike is as strong as lag-1 — textbook weekly periodicity.
+
+This explains a visual artifact of fig10: Hybrid-AR1 appears to "track" the daily bumps more closely than Hybrid-full, but this is largely because the lag-1 term `n·N(t−1)` acts as a crude proxy for day-of-week (consecutive days share DOW-neighbour structure), whereas the smooth exponential Hawkes kernel of Hybrid-full is monotone and cannot express a 7-day period. Hybrid-full still wins on LL / AIC because its smoothness avoids large Poisson penalties on days where AR-1's noise-echoing misfires — but neither model captures the weekly cycle explicitly, and the visible grouping is a real structural signal that both are missing.
+
+A quick-exploration fit adding six multiplicative day-of-week factors (one free baseline, Σ log w = 0) confirms this:
+
+| Model | # Params | AIC | ΔAIC vs no-weekly |
+|---|---|---|---|
+| Hybrid-AR1 (no weekly) | 4  | 785.59 | — |
+| Hybrid-full (no weekly) | 5  | 752.80 | — |
+| Hybrid-AR1 + weekly    | 10 | 665.56 | −120.03 |
+| Hybrid-full + weekly   | 11 | 604.68 | **−148.12** |
+
+Weekly factors from Hybrid-full + weekly (multiplicative): Mon 1.03, Tue 1.16, **Wed 1.46**, Thu 1.32, Fri 1.16, **Sat 0.54**, Sun 0.69 — a ~2.7× Wednesday/Saturday ratio. Once the weekly term is added, the full-kernel advantage over AR-1 widens (ΔAIC −60.88 vs −32.79 before), consistent with the interpretation that AR-1's "bump tracking" was a crude substitute for seasonality rather than a genuine dynamical advantage.
+
+The weekly-seasonal extension is not reported as a main model here — the exploration is kept as a diagnostic. A proper model would jointly fit the exogenous decay, endogenous self-excitation, and weekly periodicity; this is a natural direction for extending the analysis.
+
+### 7.8 Figures for §7
+
+- `fig10_hybrid_fits.png` — two-panel: Hybrid-AR1 and Hybrid-full vs observed counts
+- `fig11_all_models_overlay.png` — all five models on one plot
+- `fig12_all_models_criteria.png` — AIC/BIC/LL bar charts for all five models
+- `fig13_hybrid_decomposition.png` — Hybrid-AR1 stackplot: IHP component vs self-excitation component
+- `fig14_hybrid_early_zoom.png` — Oct 2–15 zoom: hybrid tracks both the day-0 spike and the follow-up dynamics
+- `fig15_hybrid_residuals.png` — residuals: IHP vs Hawkes vs Hybrid-AR1
+
+---
+
+## 8. Generated Output Files
 
 | File | Description |
 |---|---|
-| `fit_models.py` | Full fitting and plotting script |
-| `model_comparison.csv` | Summary table (params, LL, AIC, BIC, Pearson var) |
+| `fit_models.py` | Part-A fitting script (SP, IHP, Hawkes) |
+| `fit_hybrid.py` | Hybrid IHP+Hawkes fitting script (§7) |
+| `model_comparison.csv` | Summary table for SP / IHP / Hawkes |
+| `model_comparison_with_hybrid.csv` | Summary table with hybrid models added |
+| `fitted_rates_all_models.csv` | Per-day fitted λ(t) for all five models |
+| `fitted_params_all_models.json` | All fitted parameters, machine-readable |
 | `fig1_fitted_intensities.png` | Three separate panels: observed counts + each model's λ(t) |
-| `fig2_overlay.png` | All three models overlaid on one plot |
-| `fig3_model_criteria.png` | Bar charts of AIC, BIC, log-likelihood |
+| `fig2_overlay.png` | All three base models overlaid on one plot |
+| `fig3_model_criteria.png` | Bar charts of AIC, BIC, log-likelihood (base models) |
 | `fig4_residuals.png` | Residuals (observed − fitted) per model |
 | `fig5_pearson_residuals.png` | Pearson residual histograms |
 | `fig6_logscale.png` | Log-scale comparison (shows tail/decay behaviour) |
 | `fig7_hawkes_decomposition.png` | Hawkes background vs self-excitation stackplot |
 | `fig8_hawkes_beta_profile.png` | Profile log-likelihood of Hawkes vs β (key diagnostic) |
 | `fig9_early_zoom.png` | Zoom on Oct 2–15 (first two critical weeks) |
+| `fig10_hybrid_fits.png` | Hybrid-AR1 and Hybrid-full fits vs observed |
+| `fig11_all_models_overlay.png` | All five models overlaid |
+| `fig12_all_models_criteria.png` | AIC/BIC/LL bar charts for all five models |
+| `fig13_hybrid_decomposition.png` | Hybrid-AR1 decomposition stackplot |
+| `fig14_hybrid_early_zoom.png` | Oct 2–15 zoom with hybrid models |
+| `fig15_hybrid_residuals.png` | Residuals: IHP vs Hawkes vs Hybrid |
 
 ---
 
-## 8. Conclusions
+## 9. Conclusions
 
-1. **All three models significantly outperform each other in the expected direction**: Standard Poisson < Hawkes < IHP by AIC/BIC.
+1. **Among the three base models**, the ranking by AIC/BIC is Standard Poisson < Hawkes < IHP. IHP wins because it absorbs the day-0 exogenous shock via `A·exp(0)`, while Hawkes must start from `λ(0) = μ` with no prior excitation — this single day accounts for ~91% of the Hawkes–IHP log-likelihood gap.
 
-2. **IHP is the best-fitting model** (AIC=1032 vs Hawkes=4012 vs SP=7672). The deterministic exponential decay with half-life ~2.85 days provides the best description of the Las Vegas shooting news cycle.
+2. **Self-excitation is real but secondary in the base fit**. Hawkes branching ratio `n̂ = 0.614` is strongly significant vs Standard Poisson (ΔAIC = 3660), yet pure Hawkes loses to IHP because it has no mechanism to model exogenous shocks. The optimal Hawkes kernel for daily-resolution data is a single-step AR(1): the profile-likelihood sweep confirms the exponential kernel collapses to `λ(t) = 11.50 + 0.614·N(t−1)` as `β → ∞`.
 
-3. **The hypothesis that Hawkes fits best is not supported for this dataset**, primarily because the shooting creates an exogenous shock that the Hawkes process cannot account for at `t=0` (a single day accounts for 91% of the Hawkes–IHP gap).
+3. **The hybrid IHP+Hawkes model is the overall winner** (§7). Hybrid-full achieves AIC = 752.80, BIC = 765.35 — an improvement of ΔAIC = **−279.5** over pure IHP and ΔAIC = **−3258.8** over pure Hawkes. Hybrid-AR1 already gets most of the gain (AIC = 785.59) with only four parameters, and LR tests confirm both additions (IHP → Hybrid-AR1, Hybrid-AR1 → Hybrid-full) are significant at p ≪ 10⁻⁸.
 
-4. **Self-excitation is present** (Hawkes branching ratio n̂=0.614, strongly significant vs Standard Poisson with ΔAIC=3660), but it is not the dominant mechanism. The news cycle is mainly driven by exogenous decay, not endogenous spreading.
+4. **The hybrid decomposition matches the physical mechanism**. In Hybrid-AR1, the IHP term collapses to a near-delta spike (`A ≈ 487, β₀ = 2.22`) that absorbs the exogenous day-0 burst almost exactly (`λ(0) = 489.0 = N(0)`), and the Hawkes term (`n = 0.725`) carries the subsequent endogenous dynamics. This is a clean separation between **exogenous trigger** and **endogenous amplification**. The full hybrid refines this with two distinct decay timescales (IHP half-life 1.75 days + Hawkes kernel half-life 8.2 days), matching the intuition that the news cycle has both a fast initial decay and a slower self-sustaining tail.
 
-5. **The optimal Hawkes kernel for daily resolution data is a single-step AR(1)**: the profile likelihood sweep confirms that the Hawkes exponential kernel collapses to `λ(t) = 11.50 + 0.614·N(t-1)`. This is a robust, identifiable 2-parameter result.
-
-6. A **hybrid model** combining IHP's deterministic decay with Hawkes self-excitation would likely outperform both pure models and is a natural direction for future work.
+5. **Takeaway for news-count modelling**: neither pure deterministic decay nor pure self-excitation is enough on its own. A superposition is necessary whenever an event combines a large exogenous trigger (e.g. a breaking-news shock) with ongoing endogenous commentary (editorials, follow-ups, counter-arguments). The hybrid is the natural structural model for this.

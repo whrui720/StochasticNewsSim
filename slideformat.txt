@@ -1,0 +1,8 @@
+1. Title slide; presenter names: Harry Wang, Sriyan Madugula, Ruthesh Thavamani; title: Stochastics of News Article Propagation
+2. Dataset Overview Slide: Slide about the dataset, how we combined for the reliability label, limitations such as binary label, granularity only being day-by-day
+3. Part A Results: Just focus on our attempts to model the counting process; use the results_report from partAresults, use 2 slides for all information if necessary
+4. Part B Results: Focus on our attempt to model the actual reliability label, use the results_report from partBresults. use as many slides as necessary for all of the information, including the justifications
+and interpretations 
+5. Overall conclusion + next steps slide
+
+

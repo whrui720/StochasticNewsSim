@@ -1,0 +1,6 @@
+Model,# Params,Log-Likelihood,AIC,BIC,Pearson Var
+Standard Poisson,1,-3835.11,7672.22,7674.73,196.26
+Inhomogeneous Poisson,3,-513.15,1032.29,1039.82,8.52
+Hawkes (AR-1),2,-2003.81,4011.62,4016.65,225.1
+Hybrid IHP+Hawkes (AR-1),4,-388.79,785.59,795.63,5.1
+Hybrid IHP+Hawkes (full),5,-371.4,752.8,765.35,4.48
