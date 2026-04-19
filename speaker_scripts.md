@@ -9,16 +9,17 @@ Random presenter assignment (seeded so it is fixed):
 | Slide | Title | Presenter |
 |---|---|---|
 | 1 | Title | Harry Wang (lead-in for all three) |
-| 2 | Dataset Overview | Sriyan Madugula |
-| 3 | Part A — Base Models | Harry Wang |
-| 4 | Part A — Hybrid Winner | Ruthesh Thavamani |
-| 5 | Part B — Setup & Shared Binomial Likelihood | Sriyan Madugula |
-| 6 | Part B — Model Specifications | Sriyan Madugula |
-| 7 | Part B — Multivariate Hawkes | Harry Wang |
-| 8 | Part B — Markov Variants | Ruthesh Thavamani | Sriyan
-| 9 | Part B — Comparison | Sriyan Madugula |
-| 10 | Part B — Interpretation | Harry Wang | Sriyan | Ruthesh
-| 11 | Conclusions and Next Steps | Ruthesh Thavamani |
+| 2 | Introduction | Harry Wang |
+| 3 | Dataset Overview | Sriyan Madugula |
+| 4 | Part A — Base Models | Harry Wang |
+| 5 | Part A — Hybrid Winner | Ruthesh Thavamani |
+| 6 | Part B — Setup & Shared Binomial Likelihood | Sriyan Madugula |
+| 7 | Part B — Model Specifications | Sriyan Madugula |
+| 8 | Part B — Multivariate Hawkes | Harry Wang |
+| 9 | Part B — Markov Variants | Ruthesh Thavamani | Sriyan
+| 10 | Part B — Comparison | Sriyan Madugula |
+| 11 | Part B — Interpretation | Harry Wang | Sriyan | Ruthesh
+| 12 | Conclusions and Next Steps | Ruthesh Thavamani |
 
 ---
 
@@ -36,7 +37,54 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 2 — Dataset Overview  *(Sriyan Madugula)*
+## Slide 2 — Introduction  *(Harry Wang)*
+
+- Frame the problem: a single high-impact event seeds a *cascade* of news
+  coverage. Most existing work treats either (a) **how much** is published or
+  (b) **how reliable** the coverage is — but treats them in isolation. We
+  argue both are simultaneously stochastic processes worth modelling jointly.
+- The two questions of the project, stated explicitly:
+  - **Part A**: what stochastic process best fits the daily article count
+    $N(t)$ following the event?
+  - **Part B**: what process governs the reliable-vs-unreliable composition
+    $\pi_{pos}(t)$ of that coverage on the same window?
+- Why the 2017 Las Vegas shooting as the running example:
+  - Singular, exogenous, well-defined origin (no prior coverage ramp-up).
+  - Sharp day-0 spike followed by a long, decaying tail — gives the models
+    something to fit *and* something to be wrong about.
+  - Reliable and unreliable outlets both engaged with the story, so the
+    reliability composition is non-degenerate.
+- **Prior work** to walk through (right-hand box on the slide):
+  - **Point-process models of online attention.** Crane & Sornette (PNAS,
+    2008) used Hawkes-type response functions to separate endogenous from
+    exogenous bursts in YouTube views — the conceptual ancestor of our
+    Part-A hybrid. Zhao et al. SEISMIC (KDD, 2015) and Mishra, Rizoiu &
+    Xie (2016) extended self-exciting models to tweet/retweet cascades.
+    Daley & Vere-Jones (2003) is the standard textbook reference for
+    inhomogeneous Poisson and Hawkes processes.
+  - **Misinformation and reliability.** Vosoughi, Roy & Aral (Science, 2018)
+    showed *descriptively* that false news travels faster and farther on
+    Twitter than true news, but did not write down a generative stochastic
+    model. Allcott & Gentzkow (JEP, 2017) measured the economics of fake
+    news during the 2016 election. Tambuscio et al. (2015) used SIR-style
+    compartmental models for hoax diffusion — closest in spirit to our
+    Markov work, but in continuous-time epidemiology rather than
+    discrete-time time-series.
+  - **Reliability scoring infrastructure.** NewsGuard and Media Bias / Fact
+    Check provide outlet-level reliability scores. These are typically used
+    as features for downstream classification, *rarely* as the response
+    variable in a stochastic time-series model. We use NewsGuard explicitly
+    as the response.
+- **Gap we address**: a joint, event-level stochastic-process treatment of
+  *both* the count and the reliability composition, on the *same* timeline,
+  fit with the *same* statistical scoring. Cross-excitation between reliable
+  and unreliable streams (Hawkes branching matrix) is not, to our knowledge,
+  reported elsewhere for an event-driven news corpus.
+- Hand-off: "Sriyan will walk through how the dataset is built."
+
+---
+
+## Slide 3 — Dataset Overview  *(Sriyan Madugula)*
 
 - Where the data comes from: CC-News (Common Crawl's news subset) gives URL +
   publish date + body; NewsGuard provides domain-level reliability scores.
@@ -60,7 +108,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 3 — Part A: Modelling the Counting Process  *(Harry Wang)*
+## Slide 4 — Part A: Modelling the Counting Process  *(Harry Wang)*
 
 - Re-state the Part-A goal in one sentence: "Given the daily article count
   $N(t)$, fit a stochastic intensity $\lambda(t)$ that explains the time
@@ -86,7 +134,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 4 — Part A: Hybrid IHP + Hawkes Wins  *(Ruthesh Thavamani)*
+## Slide 5 — Part A: Hybrid IHP + Hawkes Wins  *(Ruthesh Thavamani)*
 
 - Frame: "If pure IHP captures the exogenous decay and pure Hawkes captures
   endogenous self-excitation, the natural fix is to *add* them."
@@ -110,7 +158,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 5 — Part B: Setup and the Shared Binomial Likelihood  *(Sriyan Madugula)*
+## Slide 6 — Part B: Setup and the Shared Binomial Likelihood  *(Sriyan Madugula)*
 
 - Restate the shift: in Part A we modelled the count $N(t)$; in Part B we
   model the *reliability split* $q_t = P(\text{article reliable} \mid t)$,
@@ -150,7 +198,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 6 — Part B: Model Specifications  *(Sriyan Madugula)*
+## Slide 7 — Part B: Model Specifications  *(Sriyan Madugula)*
 
 - Framing: one slide, four boxes, each box is a self-contained model
   specification — formula, parameters, one-line derivation, and how it
@@ -213,7 +261,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 7 — Part B: Multivariate Hawkes — Cross-Excitation  *(Harry Wang)*
+## Slide 8 — Part B: Multivariate Hawkes — Cross-Excitation  *(Harry Wang)*
 
 - Justification (not on slide): the multivariate Hawkes is the *natural*
   generalisation of Part A's Hawkes — same self-exciting kernel, but with a
@@ -239,7 +287,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 8 — Part B: Markov Variants — Regime Switching & Mean-Field  *(Ruthesh Thavamani)*
+## Slide 9 — Part B: Markov Variants — Regime Switching & Mean-Field  *(Ruthesh Thavamani | Sriyan)*
 
 - Justification: Markov models *directly* parameterise the conditional
   distribution we are scoring on. They are the most parameter-efficient choice
@@ -262,7 +310,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 9 — Part B: Model Comparison  *(Sriyan Madugula)*
+## Slide 10 — Part B: Model Comparison  *(Sriyan Madugula)*
 
 - Walk through the table left-to-right: log-likelihood, AIC, BIC.
   - State-dependent Markov wins outright on AIC (322.65).
@@ -287,7 +335,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 10 — Part B: Interpretation  *(Harry Wang)*
+## Slide 11 — Part B: Interpretation  *(Harry Wang | Sriyan | Ruthesh)*
 
 - Centre the discussion on the phrase **mean-reverting reliability ecology**.
   The data exhibits a stable equilibrium near $\pi_{pos} \approx 0.63$, and
@@ -314,7 +362,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 11 — Conclusions and Next Steps  *(Ruthesh Thavamani)*
+## Slide 12 — Conclusions and Next Steps  *(Ruthesh Thavamani)*
 
 - Summarise the **two headline results** in one breath:
   1. Counts → hybrid IHP + Hawkes is the right model: exogenous shock plus

@@ -508,7 +508,7 @@ add_rect_band(s, 0, SH, RGBColor(0xFA, 0xFA, 0xFC))
 add_rect_band(s, Inches(2.9), Inches(0.06), NAVY)
 add_rect_band(s, Inches(4.6), Inches(0.02), ACCENT)
 add_plain_text(s, Inches(0.8), Inches(1.4), Inches(11.7), Inches(0.5),
-               "STAT 433  \u00b7  Final Project",
+               "STAT 460  \u00b7  Stochastic Processes  \u00b7  Final Project",
                size=14, bold=True, color=ACCENT, align=PP_ALIGN.CENTER)
 add_plain_text(s, Inches(0.8), Inches(3.0), Inches(11.7), Inches(1.4),
                "Stochastics of News Article Propagation",
@@ -524,7 +524,72 @@ add_plain_text(s, Inches(0.8), Inches(5.85), Inches(11.7), Inches(0.4),
                "University of Michigan",
                size=14, color=SLATE, align=PP_ALIGN.CENTER)
 
-# ---------------- Slide 2: Dataset Overview ----------------
+# ---------------- Slide 2: Introduction ----------------
+s = prs.slides.add_slide(BLANK)
+slide_header(s, "Introduction",
+             "Joint stochastic modelling of news volume and reliability "
+             "after a singular event")
+
+add_rich_paragraph(s, Inches(0.45), Inches(1.05), Inches(6.4), Inches(0.4),
+                   "Problem", size=14, bold=True, color=NAVY)
+add_rich_bullets(s, Inches(0.45), Inches(1.45), Inches(6.4), Inches(2.1), [
+    "A single high-impact event triggers a cascade of articles across "
+    "many outlets over the following days/weeks",
+    "Coverage volume decays, but the *mix* of reliable vs unreliable "
+    "sources also evolves \u2014 and is itself a stochastic process",
+    "Test case: 2017 Las Vegas shooting \u2014 clean, isolated, "
+    "exogenously-triggered news shock",
+], size=12)
+
+add_rich_paragraph(s, Inches(0.45), Inches(3.55), Inches(6.4), Inches(0.4),
+                   "Questions and gap", size=14, bold=True, color=NAVY)
+add_rich_bullets(s, Inches(0.45), Inches(3.95), Inches(6.4), Inches(3.1), [
+    "Part A:  what stochastic process best describes the daily article "
+    "count $N(t)$ following the event?",
+    "Part B:  what process governs the reliable / unreliable composition "
+    "$\\pi_{pos}(t)$ of that coverage?",
+    "Gap addressed",
+    ("Volume dynamics and reliability dynamics are typically studied in "
+     "isolation \u2014 we model both on the same event window", 1),
+    ("Stochastic-process treatment of the reliability *mix* at "
+     "event-level granularity is rare", 1),
+    ("Cross-excitation between reliable and unreliable streams is "
+     "largely unexamined", 1),
+], size=12)
+
+# Right column: literature box
+add_formula_box(s, Inches(7.0), Inches(1.05), Inches(6.1), Inches(6.05),
+                "Prior work",
+                [
+                    ("Point-process models of online attention", "t"),
+                    ("Crane & Sornette (PNAS, 2008) \u2014 endogenous vs "
+                     "exogenous bursts in YouTube views via Hawkes-type "
+                     "response functions", "b"),
+                    ("Zhao et al. SEISMIC (KDD, 2015);  Mishra, Rizoiu & "
+                     "Xie (2016) \u2014 self-exciting models for tweet and "
+                     "retweet cascades", "b"),
+                    ("Daley & Vere-Jones (2003) \u2014 standard reference "
+                     "for inhomogeneous Poisson and Hawkes processes", "b"),
+                    ("Misinformation and reliability", "t"),
+                    ("Vosoughi, Roy & Aral (Science, 2018) \u2014 false "
+                     "news spreads farther and faster than true news on "
+                     "Twitter (descriptive, not generative)", "b"),
+                    ("Allcott & Gentzkow (JEP, 2017) \u2014 economics of "
+                     "fake news during the 2016 election", "b"),
+                    ("Tambuscio et al. (2015) \u2014 SIR-style "
+                     "compartmental models of hoax diffusion", "b"),
+                    ("Reliability labels", "t"),
+                    ("NewsGuard, Media Bias / Fact Check \u2014 outlet-level "
+                     "reliability scores; used downstream of classification, "
+                     "rarely as the response in a stochastic model", "b"),
+                    ("Our contribution", "t"),
+                    ("Joint event-level study: counting process for $N(t)$ "
+                     "(Part A) plus a shared-likelihood comparison of Hawkes "
+                     "and Markov dynamics for $\\pi_{pos}(t)$ (Part B)", "b"),
+                ], title_size=12, body_size=10, formula_size=11,
+                line_spacing=1.10)
+
+# ---------------- Slide 3: Dataset Overview ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Dataset Overview",
              "CC-News articles cross-joined with NewsGuard reliability scores")
@@ -547,7 +612,7 @@ add_plain_text(s, Inches(7.0), Inches(6.85), Inches(6.0), Inches(0.3),
                "Stacked daily counts by reliability category",
                size=10, color=LIGHT_GREY, align=PP_ALIGN.CENTER)
 
-# ---------------- Slide 3: Part A base models ----------------
+# ---------------- Slide 4: Part A base models ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Part A  \u00b7  Modelling the Counting Process",
              "Three base models fit by maximum conditional Poisson "
@@ -578,7 +643,7 @@ add_image_fit(s, PARTA / "fig11_all_models_overlay.png",
 add_image_fit(s, PARTA / "fig8_hawkes_beta_profile.png",
               Inches(7.0), Inches(4.30), Inches(6.0), Inches(2.85))
 
-# ---------------- Slide 4: Part A hybrid winner ----------------
+# ---------------- Slide 5: Part A hybrid winner ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Part A  \u00b7  Hybrid IHP + Hawkes Wins",
              "Combining exogenous trigger with endogenous self-excitation")
@@ -611,7 +676,7 @@ add_image_fit(s, PARTA / "fig13_hybrid_decomposition.png",
 add_image_fit(s, PARTA / "fig14_hybrid_early_zoom.png",
               Inches(7.0), Inches(4.20), Inches(6.0), Inches(2.95))
 
-# ---------------- Slide 5: Part B  setup + shared binomial LL ----------------
+# ---------------- Slide 6: Part B  setup + shared binomial LL ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Part B  \u00b7  Setup and the Shared Binomial Likelihood",
              "Conditioning on $N_{tot}(t)$ puts Hawkes and Markov on a common scale")
@@ -675,7 +740,7 @@ add_formula_box(s, RCOL_L, Inches(4.95), RCOL_W, Inches(2.15),
                      " \\,+\\, \\pi_{pos}(t-1)\\, P_{pos \\to pos}$", "f"),
                 ], title_size=12, body_size=11, formula_size=12)
 
-# ---------------- Slide 6: Part B Model Specifications ----------------
+# ---------------- Slide 7: Part B Model Specifications ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Part B  \u00b7  Model Specifications",
              "Four candidates on the shared binomial scale \u2014 "
@@ -759,7 +824,7 @@ add_formula_box(s, L2, T2, BOX_W, BOX_H,
                      "LRT, df $= 2$;  precursor to McKean\u2013Vlasov", "b"),
                 ], title_size=11, body_size=10, formula_size=11)
 
-# ---------------- Slide 7: Part B Multivariate Hawkes ----------------
+# ---------------- Slide 8: Part B Multivariate Hawkes ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Part B  \u00b7  Multivariate Hawkes \u2014 Cross-Excitation",
              "Branching matrix between reliable and unreliable streams")
@@ -788,7 +853,7 @@ add_image_fit(s, PARTB / "fig3_hawkes_branching_heatmap.png",
 add_image_fit(s, PARTB / "fig4_hawkes_fitted_vs_observed.png",
               Inches(7.05), Inches(4.20), Inches(6.0), Inches(2.95))
 
-# ---------------- Slide 8: Part B Markov variants ----------------
+# ---------------- Slide 9: Part B Markov variants ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Part B  \u00b7  Markov Variants \u2014 Regime Switching & "
                 "Mean-Field",
@@ -818,7 +883,7 @@ add_image_fit(s, PARTB / "fig5_markov_regime_matrices.png",
 add_image_fit(s, PARTB / "fig6_meanfield_P_trajectory.png",
               Inches(7.05), Inches(4.20), Inches(6.0), Inches(2.95))
 
-# ---------------- Slide 9: Part B comparison ----------------
+# ---------------- Slide 10: Part B comparison ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Part B  \u00b7  Model Comparison on Shared Binomial Scale",
              "Effective sample size $n_{eff} = 86$ days with at least "
@@ -856,7 +921,7 @@ add_image_fit(s, PARTB / "fig7_fitted_proportion_comparison.png",
 add_image_fit(s, PARTB / "fig9_model_comparison.png",
               Inches(7.05), Inches(4.20), Inches(6.0), Inches(2.95))
 
-# ---------------- Slide 10: Part B interpretation ----------------
+# ---------------- Slide 11: Part B interpretation ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Part B  \u00b7  Interpretation \u2014 A Mean-Reverting "
                 "Reliability Ecology",
@@ -883,7 +948,7 @@ add_rich_bullets(s, Inches(0.45), Inches(1.15), Inches(12.4), Inches(5.5), [
     "estimates are trustworthy",
 ], size=15)
 
-# ---------------- Slide 11: Conclusions + next steps ----------------
+# ---------------- Slide 12: Conclusions + next steps ----------------
 s = prs.slides.add_slide(BLANK)
 slide_header(s, "Conclusions and Next Steps")
 add_rich_paragraph(s, Inches(0.45), Inches(1.05), Inches(6.2), Inches(0.45),
