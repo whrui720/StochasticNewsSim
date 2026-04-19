@@ -12,12 +12,13 @@ Random presenter assignment (seeded so it is fixed):
 | 2 | Dataset Overview | Sriyan Madugula |
 | 3 | Part A — Base Models | Harry Wang |
 | 4 | Part A — Hybrid Winner | Ruthesh Thavamani |
-| 5 | Part B — Setup | Sriyan Madugula |
-| 6 | Part B — Multivariate Hawkes | Harry Wang |
-| 7 | Part B — Markov Variants | Ruthesh Thavamani | Sriyan
-| 8 | Part B — Comparison | Sriyan Madugula |
-| 9 | Part B — Interpretation | Harry Wang | Sriyan | Ruthesh
-| 10 | Conclusions and Next Steps | Ruthesh Thavamani |
+| 5 | Part B — Setup & Shared Binomial Likelihood | Sriyan Madugula |
+| 6 | Part B — Model Specifications | Sriyan Madugula |
+| 7 | Part B — Multivariate Hawkes | Harry Wang |
+| 8 | Part B — Markov Variants | Ruthesh Thavamani | Sriyan
+| 9 | Part B — Comparison | Sriyan Madugula |
+| 10 | Part B — Interpretation | Harry Wang | Sriyan | Ruthesh
+| 11 | Conclusions and Next Steps | Ruthesh Thavamani |
 
 ---
 
@@ -109,33 +110,110 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 5 — Part B: Modelling the Reliability Distribution  *(Sriyan Madugula)*
+## Slide 5 — Part B: Setup and the Shared Binomial Likelihood  *(Sriyan Madugula)*
 
 - Restate the shift: in Part A we modelled the count $N(t)$; in Part B we
-  model the *reliability split* $\pi_{pos}(t) = N_{pos}/N_{tot}$.
-- Why the shared **binomial likelihood**: Hawkes natively gives a Poisson
-  count likelihood, Markov natively gives a binomial-on-totals likelihood.
-  Their AICs aren't comparable on their native scales, so we condition on the
-  observed daily total $N_{tot}(t)$ and ask each model: *given that total, how
-  well do you predict the split?* This is also the semantically correct
-  question for Part B.
-- Walk through each model family:
-  - **Multivariate Hawkes (AR-1 limit)**: 2×2 branching matrix, baselines
-    $\mu_{neg}, \mu_{pos}$, stationarity enforced via spectral-radius
-    constraint.
-  - **Homogeneous Markov**: a single transition matrix $P$ — the null model.
-  - **State-dependent Markov**: two matrices keyed on yesterday's majority
-    state. Captures regime switching by *brute force* (a discrete switch).
-  - **Mean-field Markov**: same idea, but the regime dependence is encoded
-    through smooth logistic links of $\pi_{pos}(t-1)$. Reduces to the
-    homogeneous baseline when the slope parameters are zero — gives a clean
-    LRT.
-- Hand-off: "These are the four candidates; the next three slides show the
-  fits and how they compare."
+  model the *reliability split* $q_t = P(\text{article reliable} \mid t)$,
+  tracked empirically by $\pi_{pos}(t) = N_{pos}(t) / N_{tot}(t)$.
+- Why we need a shared likelihood in the first place:
+  - Hawkes natively scores the *pair of counts* $(N_{neg}(t), N_{pos}(t))$
+    under a multivariate Poisson log-likelihood.
+  - Markov natively scores a one-step *transition* under a multinomial /
+    binomial on the proportion.
+  - The two native AICs live on completely different scales — directly
+    comparing them would be meaningless.
+- Derivation of the shared scale — the **Poisson–binomial superposition
+  identity** (right panel, box 1):
+  - If $X \sim \mathrm{Pois}(\lambda_1)$ and $Y \sim \mathrm{Pois}(\lambda_2)$
+    independently, then $X \mid (X + Y = n) \sim
+    \mathrm{Binomial}(n, \lambda_1 / (\lambda_1 + \lambda_2))$.
+  - Applied to our setup, $N_{pos}(t) \mid N_{tot}(t) \sim
+    \mathrm{Binomial}(N_{tot}(t), q_t)$.
+  - This is *the* natural noise model for "$k$ positives out of $N$" when
+    outcomes are conditionally independent.
+- Walk through the **per-day log-likelihood** (box 2):
+  - $\ell_t = \log \binom{N_{tot}(t)}{N_{pos}(t)} + N_{pos}(t) \log q_t +
+    N_{neg}(t) \log(1 - q_t)$.
+  - The binomial coefficient is a constant in $q_t$, so it cancels in every
+    model comparison — it only affects the absolute LL, not ΔAIC or LRT
+    statistics.
+  - Sum over the 86 non-empty days (five days in the 91-day window have zero
+    articles and are skipped).
+- Point at the **model-specific $q_t$** box (box 3):
+  - Hawkes implied split: $q_t = \lambda_{pos}(t) /
+    (\lambda_{pos}(t) + \lambda_{neg}(t))$ — a direct consequence of the
+    Poisson superposition identity.
+  - Markov transition: $q_t = (\pi_{t-1} P_t)_{pos}$ — just a matrix-vector
+    product on the empirical distribution.
+- Hand-off: "Given that common scoring rule, the next slide gives the full
+  functional form of each candidate model."
 
 ---
 
-## Slide 6 — Part B: Multivariate Hawkes — Cross-Excitation  *(Harry Wang)*
+## Slide 6 — Part B: Model Specifications  *(Sriyan Madugula)*
+
+- Framing: one slide, four boxes, each box is a self-contained model
+  specification — formula, parameters, one-line derivation, and how it
+  plugs into the shared binomial $q_t$.
+
+### Box 1 — Multivariate Hawkes (AR-1 limit, 6 parameters)
+- Formula: $\lambda_k(t) = \mu_k + \sum_{j \in \{neg, pos\}} n_{k,j}
+  N_j(t-1)$ for $k \in \{neg, pos\}$.
+- Derivation: direct two-dimensional lift of Part A's AR(1) Hawkes winner.
+  Each category gets its own baseline $\mu_k$ and its own row of the $2
+  \times 2$ branching matrix, so cross-excitation between categories is
+  first-class.
+- Stationarity: require the spectral radius $\rho(n) < 1$. Enforced as a
+  constraint during optimisation (log-barrier) and checked at the fitted
+  value.
+- Poisson counts $\Rightarrow$ superposition gives
+  $q_t = \lambda_{pos}(t) / (\lambda_{pos}(t) + \lambda_{neg}(t))$, which
+  is what we score on.
+
+### Box 2 — Homogeneous Markov (null, 2 parameters)
+- Formula: a single constant $2 \times 2$ transition matrix $P$; rows sum
+  to one, so only two free parameters (one per row).
+- Derivation: treat an article's reliability label as a first-order Markov
+  chain over a fictitious "yesterday's sampled article" and aggregate to
+  daily proportions.
+- Score function: $q_t = (\pi_{t-1} P)_{pos}$ directly.
+- Purpose: null benchmark against which 2a and 2b are likelihood-ratio
+  tested.
+- Stationary distribution $\pi^*$ satisfies $\pi^* P = \pi^*$ and sits at
+  $\approx (0.39, 0.61)$, close to the empirical (0.37, 0.63).
+
+### Box 3 — State-dependent (regime-switching) Markov (4 parameters)
+- Regime indicator: $x_{t-1} = \arg\max_k \pi_k(t-1) \in \{neg, pos\}$ —
+  just "which class was in the majority yesterday?".
+- Formula: two separate transition matrices $P^{(neg)}$ and $P^{(pos)}$,
+  and $q_t = (\pi_{t-1} P^{(x_{t-1})})_{pos}$.
+- Derivation idea: the shock regime (neg-majority, only 12 of 86 non-empty
+  days) is dynamically different from the equilibrium regime; let the data
+  fit two matrices instead of one.
+- Caveat: the cut-off at $\pi_{pos} = 0.5$ is model-imposed and abrupt;
+  that motivates 2b.
+
+### Box 4 — Mean-field Markov (4 parameters)
+- Formulas: logistic links
+  - $P_{neg \to pos}(t) = \sigma(a_0 + a_1 \pi_{pos}(t-1))$,
+  - $P_{pos \to neg}(t) = \sigma(b_0 + b_1 \pi_{pos}(t-1))$;
+  other entries fixed by the row-sum constraint.
+- Derivation idea: replace the discrete regime indicator with a smooth
+  function of yesterday's empirical proportion — same mean-field intuition
+  as 2a but differentiable everywhere.
+- Nesting: at $a_1 = b_1 = 0$ it reduces exactly to the homogeneous null
+  (box 2), giving a clean LRT with df = 2.
+- This model is the discrete-time precursor of the McKean–Vlasov direction
+  flagged on the conclusions slide.
+
+### Closing beat
+- "All four models slot into the same $\ell_t = N_{pos} \log q_t +
+  N_{neg} \log(1 - q_t) + \text{const}$ likelihood — only the functional
+  form of $q_t$ differs. That's the whole reason the comparison is fair."
+
+---
+
+## Slide 7 — Part B: Multivariate Hawkes — Cross-Excitation  *(Harry Wang)*
 
 - Justification (not on slide): the multivariate Hawkes is the *natural*
   generalisation of Part A's Hawkes — same self-exciting kernel, but with a
@@ -161,7 +239,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 7 — Part B: Markov Variants — Regime Switching & Mean-Field  *(Ruthesh Thavamani)*
+## Slide 8 — Part B: Markov Variants — Regime Switching & Mean-Field  *(Ruthesh Thavamani)*
 
 - Justification: Markov models *directly* parameterise the conditional
   distribution we are scoring on. They are the most parameter-efficient choice
@@ -184,7 +262,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 8 — Part B: Model Comparison  *(Sriyan Madugula)*
+## Slide 9 — Part B: Model Comparison  *(Sriyan Madugula)*
 
 - Walk through the table left-to-right: log-likelihood, AIC, BIC.
   - State-dependent Markov wins outright on AIC (322.65).
@@ -209,7 +287,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 9 — Part B: Interpretation  *(Harry Wang)*
+## Slide 10 — Part B: Interpretation  *(Harry Wang)*
 
 - Centre the discussion on the phrase **mean-reverting reliability ecology**.
   The data exhibits a stable equilibrium near $\pi_{pos} \approx 0.63$, and
@@ -236,7 +314,7 @@ Random presenter assignment (seeded so it is fixed):
 
 ---
 
-## Slide 10 — Conclusions and Next Steps  *(Ruthesh Thavamani)*
+## Slide 11 — Conclusions and Next Steps  *(Ruthesh Thavamani)*
 
 - Summarise the **two headline results** in one breath:
   1. Counts → hybrid IHP + Hawkes is the right model: exogenous shock plus
