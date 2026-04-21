@@ -10,16 +10,16 @@ Random presenter assignment (seeded so it is fixed):
 |---|---|---|
 | 1 | Title | Harry Wang (lead-in for all three) |
 | 2 | Introduction | Harry Wang |
-| 3 | Dataset Overview | Sriyan Madugula |
-| 4 | Part A — Base Models | Harry Wang |
-| 5 | Part A — Hybrid Winner | Ruthesh Thavamani |
-| 6 | Part B — Setup & Shared Binomial Likelihood | Sriyan Madugula |
-| 7 | Part B — Model Specifications | Sriyan Madugula |
-| 8 | Part B — Multivariate Hawkes | Harry Wang |
-| 9 | Part B — Markov Variants | Ruthesh Thavamani | Sriyan
-| 10 | Part B — Comparison | Sriyan Madugula |
-| 11 | Part B — Interpretation | Harry Wang | Sriyan | Ruthesh
-| 12 | Conclusions and Next Steps | Ruthesh Thavamani |
+| 3 | Prior Work | Harry Wang |
+| 4 | Dataset Overview | Sriyan Madugula |
+| 5 | Part A — Base Models | Ruthesh Thavamani |
+| 6 | Part A — Hybrid Winner | Harry Wang |
+| 7 | Part B — Setup & Shared Binomial Likelihood | Sriyan Madugula |
+| 8 | Part B — Model Specifications | Harry for 1 and 2a, Ruthesh for the rest |
+| 9 | Part B — Multivariate Hawkes | Harry Wang |
+| 10 | Part B — Markov Variants | Ruthesh Thavamani | 
+| 11 | Part B — Comparison | Sriyan Madugula |
+| 12 | Conclusions and Next Steps | Sriyan on Conclusions, Harry on Next Steps |
 
 ---
 

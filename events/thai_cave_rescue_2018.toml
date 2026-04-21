@@ -1,0 +1,40 @@
+[event]
+name           = "Thai Cave Rescue 2018"
+ccnews_year    = "2018"
+publish_cutoff = "2018-06-01"
+output_prefix  = "thai_cave_rescue_2018_scored"
+
+[keywords]
+# Specific enough to match anywhere in title or body text.
+anywhere = [
+    "thai cave rescue",
+    "tham luang cave",
+    "tham luang nang non",
+    "thailand cave rescue",
+    "cave rescue thailand",
+    "thai cave boys",
+    "thailand cave boys",
+    "wild boars cave",
+    "wild boars soccer",
+    "wild boars football",
+    "soccer team cave",
+    "football team cave",
+    "cave rescue boys",
+    "chiang rai cave",
+    "mae sai cave",
+    "saman kunan",
+    "ekkapol chanthawong",
+    "elon musk cave",
+    "thai navy seal cave",
+    "trapped cave thailand",
+]
+
+# Too generic for body text — only matched against article titles.
+title_only = [
+    "thai cave",
+    "thailand cave",
+    "tham luang",
+    "cave rescue",
+    "cave boys",
+    "wild boars",
+]
