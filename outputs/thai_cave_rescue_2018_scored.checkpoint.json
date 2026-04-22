@@ -1,0 +1,13 @@
+{
+  "ccnews_year": "2018",
+  "event_name": "Thai Cave Rescue 2018",
+  "file_index": 1,
+  "output_prefix": "thai_cave_rescue_2018_scored",
+  "publish_cutoff": "2018-06-01",
+  "rows_in_current_file": 5,
+  "total_after_date_filter": 1551875,
+  "total_after_topic_filter": 50,
+  "total_scanned": 7399825,
+  "total_written": 5,
+  "version": 1
+}
