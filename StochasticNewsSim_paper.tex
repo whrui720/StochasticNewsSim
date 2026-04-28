@@ -1,0 +1,967 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit,backgrounds}
+
+\title{Stochastics of News Article Propagation: \\
+       Joint Modelling of Counts and Reliability Composition \\
+       in Event-Driven News Cascades}
+\author{Harry Wang \and Sriyan Madugula \and Ruthesh Thavamani}
+\date{MATH 460 --- Stochastic Modelling}
+
+\newcommand{\Npos}{N_{\mathrm{pos}}}
+\newcommand{\Nneg}{N_{\mathrm{neg}}}
+\newcommand{\Ntot}{N_{\mathrm{tot}}}
+\newcommand{\pipos}{\pi_{\mathrm{pos}}}
+\newcommand{\lampos}{\lambda_{\mathrm{pos}}}
+\newcommand{\lamneg}{\lambda_{\mathrm{neg}}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study the news cascade triggered by a single high-impact event as a pair of
+coupled stochastic processes: the daily article count $N(t)$ and the
+reliable-vs-unreliable composition $\pipos(t)$. Using the 2017 Las Vegas
+shooting as a primary case study (CC-News + NewsGuard, 91 days, 2{,}702
+articles), we fit and compare five counting-process models for $N(t)$ and four
+distributional models for $\pipos(t)$ on a common likelihood scale. For
+counts, a hybrid Inhomogeneous-Poisson plus Hawkes model wins decisively
+($\Delta\mathrm{AIC}=-279.5$ vs.\ pure IHP), separating an exogenous trigger
+from endogenous amplification at distinct timescales. A profile-likelihood
+sweep of the Hawkes decay rate collapses the optimal Hawkes kernel to an
+AR(1) one-step lag $\lambda(t)=\mu+n N(t-1)$. This Markovian structure on the
+counts directly motivates the Part-B reliability models: we treat the
+reliability label as a first-order Markov chain on a binary state space and
+test homogeneous, regime-switching, and mean-field parameterisations against a
+bivariate Hawkes baseline on a shared conditional binomial likelihood. The
+state-dependent (regime-switching) Markov model is the AIC winner ($322.65$),
+revealing a mean-reverting reliability ecology around $\pipos\approx 0.63$. A
+brief replication on Hurricane Harvey 2017 shows the same methodology applies
+but produces a different ranking, consistent with the qualitatively different
+exogenous-shock profile of that event.
+\end{abstract}
+
+% =================================================================
+\section{Introduction}
+% =================================================================
+
+A single high-impact event seeds a cascade of news coverage. Two observable
+quantities of that cascade are simultaneously stochastic: \emph{how much} is
+published on each day after the event ($N(t)$) and \emph{how reliable} that
+coverage is ($\pipos(t)$, the fraction of articles published by reliable
+outlets). Most existing work treats one of these in isolation. We argue that
+both deserve a joint stochastic-process treatment on the same event timeline,
+and that doing so is feasible with public data.
+
+\paragraph{Research questions.}
+\begin{itemize}
+  \item \textbf{Part A.} What stochastic process best fits the daily article
+        count $N(t)$ following an event?
+  \item \textbf{Part B.} What process governs the reliable-vs-unreliable
+        composition $\pipos(t)$ over the same window?
+\end{itemize}
+
+\paragraph{Running example.} The 2017 Las Vegas shooting is our primary case
+study. The event has a singular, exogenous, well-defined origin (no prior
+coverage ramp-up), a sharp day-0 spike (489 articles), and a long, decaying
+tail (91 days), giving the candidate models something to fit and something to
+get wrong. Reliable and unreliable outlets both engaged with the story so the
+reliability composition is non-degenerate. Hurricane Harvey 2017 serves as a
+secondary cross-event replication.
+
+\paragraph{Prior work.} Three threads in the literature are relevant.
+
+\emph{Point-process models of online attention.} Crane and Sornette
+\cite{CraneSornette2008} used Hawkes-type response functions to separate
+endogenous from exogenous bursts in YouTube views; this is the conceptual
+ancestor of our Part-A hybrid. Zhao et al.\ (SEISMIC, \cite{Zhao2015SEISMIC})
+and Mishra, Rizoiu, and Xie \cite{MishraRizoiuXie2016} extended self-exciting
+processes to tweet/retweet cascades. Daley and Vere-Jones
+\cite{DaleyVereJones2003} provide the canonical reference for inhomogeneous
+Poisson and Hawkes processes on point patterns.
+
+\emph{Misinformation and reliability.} Vosoughi, Roy, and Aral
+\cite{VosoughiRoyAral2018} showed descriptively that false news travels faster
+and farther on Twitter than true news, but did not write down a generative
+stochastic model. Allcott and Gentzkow \cite{AllcottGentzkow2017} measured the
+economics of fake news during the 2016 U.S.\ election. Tambuscio et al.\
+\cite{Tambuscio2015} used SIR-style compartmental models for hoax diffusion;
+this is closest in spirit to our Markov-chain work, but in continuous-time
+epidemiology rather than discrete-time time-series.
+
+\emph{Reliability scoring infrastructure.} NewsGuard and Media Bias / Fact
+Check provide outlet-level reliability scores. These are typically used as
+features for downstream classification, rarely as the response variable in a
+stochastic time-series model. We use NewsGuard explicitly as the response.
+
+\paragraph{Gap and contributions.} We are not aware of prior work that
+provides a joint, event-level, stochastic-process treatment of \emph{both} the
+count and the reliability composition on the \emph{same} timeline, fit with
+the \emph{same} statistical scoring. Concretely, this paper contributes:
+\begin{enumerate}
+  \item A hybrid IHP\,+\,Hawkes model for the count process that decomposes a
+        news cascade into an exogenous trigger and endogenous amplification
+        operating at two distinct timescales.
+  \item A shared conditional binomial likelihood that puts a multivariate
+        Hawkes process and a family of Markov-chain models on a single AIC/BIC
+        scale, despite having native likelihoods of different types.
+  \item An empirical bridge from Part A to Part B: the Hawkes profile
+        likelihood collapses to an AR(1) limit, motivating Markov-chain
+        modelling of the reliability state. This narrative thread is the
+        backbone of \S\ref{sec:bridge}.
+\end{enumerate}
+
+% =================================================================
+\section{Methods}
+\label{sec:methods}
+% =================================================================
+
+\subsection{Data and preprocessing}
+\label{sec:data}
+
+We use the news subset of the Common Crawl (CC-News), which provides URL,
+publication date, and article body text. We left-join against the public
+NewsGuard domain-level reliability dataset on the article's URL domain
+(see \texttt{loader.py}), so that each article inherits the score of its
+publishing outlet. The continuous NewsGuard score is thresholded at the
+sample median to a binary reliability label $\{-1,+1\}$ (unreliable /
+reliable). Event-relevant articles are selected by a keyword filter
+(per-event TOML configuration); missing dates are zero-filled so every model
+sees the same regular daily grid.
+
+For the Las Vegas 2017 main analysis the window is 2017-10-02 to 2017-12-31
+($T=91$ days, zero-filled), with $2{,}702$ articles total
+($\Nneg=986$, $\Npos=1{,}716$; empirical split $0.365/0.635$), a peak of
+$489$ articles on day 0, and $5$ days with zero articles (skipped in the
+binomial likelihood).
+
+\subsection{Part A: counting-process models for $N(t)$}
+\label{sec:partA-models}
+
+We fit three baseline counting-process models and a four-parameter / five-parameter
+hybrid. All five models are scored on the same conditional Poisson
+log-likelihood including the $\log N!$ normalisation,
+\begin{equation}
+  \ell = \sum_{t=0}^{T-1}\Bigl[N(t)\log\lambda(t) - \lambda(t) - \log N(t)!\Bigr],
+  \label{eq:poisson-LL}
+\end{equation}
+so that AIC and BIC are directly comparable across families.
+
+\paragraph{Standard Poisson (SP, 1 parameter).}
+$\lambda(t)=\lambda$ for all $t$; MLE in closed form,
+$\hat\lambda=\overline{N}$. Included as a null baseline.
+
+\paragraph{Inhomogeneous Poisson (IHP, 3 parameters).}
+$\lambda(t)=A\,e^{-\beta t}+c$ with $A\!\geq\!0$ the initial amplitude above
+baseline, $\beta\!>\!0$ the exponential decay rate, and $c\!\geq\!0$ the
+long-run baseline. Each day's count is an independent Poisson draw whose rate
+decays deterministically with absolute calendar time: this captures the
+``news-cycle decay'' phenomenon. Optimised by Nelder--Mead with multi-start.
+
+\paragraph{Discrete-time Hawkes (2 parameters in the AR-1 limit, 3 in general).}
+We use the recursive form
+\begin{equation}
+  \lambda(t)=\mu+\alpha\,R(t),\qquad R(t)=e^{-\beta}\bigl[R(t-1)+N(t-1)\bigr],
+  \quad R(0)=0,
+  \label{eq:hawkes}
+\end{equation}
+with the stationary reparameterisation
+\begin{equation}
+  n=\frac{\alpha}{e^{\beta}-1}\in(0,1),
+\end{equation}
+where $n$ is the \emph{branching ratio} (the expected number of secondary
+articles triggered per article). $\lambda(t)$ is conditional on the past
+counts $N(0),\dots,N(t-1)$, so the log-likelihood
+\eqref{eq:poisson-LL} must be evaluated recursively rather than with a
+naive plug-in MLE on binned counts.
+
+\paragraph{Hybrid IHP\,+\,Hawkes (4 or 5 parameters).}
+The hybrid combines exogenous decay with endogenous self-excitation,
+\begin{equation}
+  \lambda(t)=A\,e^{-\beta_0 t}+c+\alpha\,R(t),
+  \qquad R(t)=e^{-\beta_1}\bigl[R(t-1)+N(t-1)\bigr].
+  \label{eq:hybrid-full}
+\end{equation}
+At $t=0$, $R(0)=0$ so $\lambda(0)=A+c$, which lets the hybrid still absorb a
+day-0 exogenous shock. Two variants are fit: the AR-1 limit
+($\beta_1\to\infty$, replacing $\alpha R(t)$ by $n N(t-1)$, 4 params) and the
+full kernel (5 params). Hybrid-AR1 strictly nests both pure IHP (set $n=0$)
+and pure Hawkes-AR1 (drop the IHP term and rename $c\!\to\!\mu$); Hybrid-full
+strictly nests Hybrid-AR1. These nestings enable likelihood-ratio tests in
+addition to AIC/BIC.
+
+\paragraph{Optimisation.} All models are fit with Nelder--Mead from a
+multi-start grid of initialisations to dodge local minima. Stationarity of
+the Hawkes process is checked at the fitted value; for the multivariate
+Hawkes of \S\ref{sec:partB-models} stationarity is enforced as a
+spectral-radius constraint on the branching matrix.
+
+\subsection{The AR(1)\,$\to$\,Markov bridge between Part A and Part B}
+\label{sec:bridge}
+
+A diagnostic on the Part-A Hawkes that profoundly shapes Part B is the
+\emph{profile log-likelihood of the kernel decay} $\beta$. Fixing $\beta$ on
+a log-grid from $0.05$ to $32$ and re-optimising $(\mu,n)$, the profile
+log-likelihood is monotone increasing in $\beta$ and plateaus for
+$\beta\geq 10$ (Table~\ref{tab:beta-profile}). In the limit
+$\beta\to\infty$ the exponential kernel $e^{-\beta\Delta}$ collapses to a
+delta at lag $\Delta=1$, and the Hawkes intensity reduces to
+\begin{equation}
+  \lambda(t)\approx \mu + n\,N(t-1).
+  \label{eq:ar1}
+\end{equation}
+This is a discrete \emph{AR(1) model} for the intensity of the count
+process: the next-day rate depends only on yesterday's count, which is
+exactly the conditional independence structure of a first-order Markov chain.
+
+This empirical AR(1) collapse motivates the Part-B model family.
+For the binary reliability state, the natural generalisation of
+\eqref{eq:ar1} is a first-order Markov chain on the state space
+$\{\mathrm{neg},\mathrm{pos}\}$, parameterised by a $2{\times}2$ transition
+matrix $P$ that may be \emph{homogeneous} (a single $P$), \emph{regime-switching}
+(two $P^{(\cdot)}$ matrices indexed by yesterday's majority state), or
+\emph{mean-field} (the entries of $P_t$ depend smoothly on yesterday's
+empirical proportion $\pipos(t-1)$). This thread is summarised in
+Figure~\ref{fig:ar1-bridge}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=8mm and 14mm,
+    every node/.style={align=center, font=\small},
+    box/.style={draw, rectangle, rounded corners=2pt, inner sep=4pt,
+                minimum height=8mm, minimum width=24mm},
+    pivot/.style={draw, rectangle, rounded corners=2pt, inner sep=4pt,
+                  minimum height=8mm, minimum width=42mm,
+                  thick, fill=black!7},
+    arrow/.style={-Latex, thick}
+]
+  \node[box] (data) {CC-News + NewsGuard \\ daily counts};
+  \node[box, right=of data] (partA) {Part A \\ count models for $N(t)$};
+  \node[box, above right=4mm and 16mm of partA] (sp)     {SP};
+  \node[box, right=of partA]                    (ihp)    {IHP};
+  \node[box, below right=4mm and 16mm of partA] (hawkes) {Hawkes \\ $\lambda{=}\mu{+}\alpha R$};
+  \node[box, below=14mm of partA] (hybrid) {Hybrid IHP+Hawkes \\ (Part-A winner)};
+  \node[pivot, below=10mm of hawkes] (betaSweep) {$\beta$-profile sweep};
+  \node[pivot, below=8mm of betaSweep] (ar1)
+        {AR(1) limit: $\lambda(t){=}\mu{+}n N(t{-}1)$};
+  \node[pivot, below=8mm of ar1] (bridge)
+        {AR(1) on counts \\ = first-order Markov chain};
+  \node[box, below left=10mm and -6mm of bridge] (homog)     {Homogeneous $P$};
+  \node[box, below=10mm of bridge]               (stateDep)  {State-dep $P^{(x)}$};
+  \node[box, below right=10mm and -6mm of bridge](meanField) {Mean-field $P(\pipos)$};
+  \node[box, left=of bridge] (mvHawkes) {Multivariate Hawkes \\ (count comparator)};
+  \node[box, below=10mm of stateDep, fill=black!4] (binomLL)
+        {Shared binomial log-likelihood \\ AIC / BIC / LRT};
+
+  \draw[arrow] (data) -- (partA);
+  \draw[arrow] (partA) -- (sp);
+  \draw[arrow] (partA) -- (ihp);
+  \draw[arrow] (partA) -- (hawkes);
+  \draw[arrow] (partA) -- (hybrid);
+  \draw[arrow] (hawkes) -- (betaSweep);
+  \draw[arrow] (betaSweep) -- (ar1);
+  \draw[arrow] (ar1) -- (bridge);
+  \draw[arrow] (bridge) -- (homog);
+  \draw[arrow] (bridge) -- (stateDep);
+  \draw[arrow] (bridge) -- (meanField);
+  \draw[arrow] (mvHawkes) -- (binomLL);
+  \draw[arrow] (homog)     -- (binomLL);
+  \draw[arrow] (stateDep)  -- (binomLL);
+  \draw[arrow] (meanField) -- (binomLL);
+\end{tikzpicture}
+\caption{The narrative thread connecting Part A and Part B. The Hawkes
+$\beta$-profile sweep on daily-resolution counts plateaus in the AR(1)
+limit, and an AR(1) on a discrete state is precisely a first-order Markov
+chain. This motivates a Markov-chain family for the binary reliability
+state in Part B, scored against the multivariate-Hawkes count model on a
+common conditional binomial likelihood.}
+\label{fig:ar1-bridge}
+\end{figure}
+
+\subsection{Part B: distributional models for the reliability split}
+\label{sec:partB-models}
+
+Part B asks: given the daily total $\Ntot(t)=\Nneg(t)+\Npos(t)$, what process
+explains the daily \emph{reliable fraction} $\pipos(t)=\Npos(t)/\Ntot(t)$?
+
+\paragraph{Shared conditional binomial likelihood.}
+Hawkes natively scores the pair of counts $(\Nneg(t),\Npos(t))$ under a
+multivariate Poisson log-likelihood; a Markov chain natively scores a
+one-step transition under a multinomial / binomial on the proportion. The
+two native AICs live on different scales, so direct comparison is
+meaningless. To put all candidates on one scale we use the
+Poisson--binomial superposition identity: if
+$X\sim\mathrm{Pois}(\lambda_1)$ and $Y\sim\mathrm{Pois}(\lambda_2)$
+independently, then
+$X\mid X+Y=n \sim \mathrm{Binomial}(n, \lambda_1/(\lambda_1+\lambda_2))$.
+Applied to our setup,
+\begin{equation}
+  \Npos(t)\,\bigl|\,\Ntot(t)\;\sim\;\mathrm{Binomial}\bigl(\Ntot(t),\,q_t\bigr),
+  \label{eq:cond-binomial}
+\end{equation}
+with model-specific $q_t$. The per-day log-likelihood is
+\begin{equation}
+  \ell_t = \log\binom{\Ntot(t)}{\Npos(t)}
+         + \Npos(t)\log q_t + \Nneg(t)\log(1-q_t),
+  \label{eq:binom-LL}
+\end{equation}
+summed over the $86$ days with $\Ntot(t)>0$. The binomial coefficient is a
+constant in $q_t$ and so cancels in every $\Delta\mathrm{AIC}$ and LRT.
+
+\paragraph{Model 1: Multivariate Hawkes (AR-1 limit, 6 parameters).}
+\begin{equation}
+  \lambda_k(t) = \mu_k + \sum_{j\in\{\mathrm{neg},\mathrm{pos}\}} n_{kj}\,N_j(t-1),
+  \quad k\in\{\mathrm{neg},\mathrm{pos}\}.
+  \label{eq:mvhawkes}
+\end{equation}
+Each category gets its own baseline $\mu_k$ and its own row of the
+$2{\times}2$ branching matrix $n=(n_{kj})$, so cross-excitation is
+first-class. Stationarity ($\rho(n)<1$) is enforced as a constraint during
+optimisation. The implied split is
+$q_t=\lampos(t)/(\lampos(t)+\lamneg(t))$, the direct consequence of the
+superposition identity \eqref{eq:cond-binomial}.
+
+\paragraph{Model 2z: Homogeneous Markov (null, 2 parameters).}
+A single $2{\times}2$ transition matrix $P$ with rows summing to one
+(only two free parameters, one per row). The predicted split is
+$q_t=(\pi_{t-1}\,P)_{\mathrm{pos}}$.
+
+\paragraph{Model 2a: State-dependent Markov (4 parameters).}
+Two transition matrices $P^{(\mathrm{neg})}$ and $P^{(\mathrm{pos})}$,
+indexed by yesterday's majority class
+$x_{t-1}=\arg\max_k\pi_k(t-1)\in\{\mathrm{neg},\mathrm{pos}\}$:
+\begin{equation}
+  q_t = \bigl(\pi_{t-1}\, P^{(x_{t-1})}\bigr)_{\mathrm{pos}}.
+\end{equation}
+This lets the rare neg-majority shock regime have qualitatively different
+dynamics from the typical pos-majority equilibrium regime.
+
+\paragraph{Model 2b: Mean-field Markov (4 parameters).}
+The transition probabilities depend smoothly on yesterday's empirical
+proportion through logistic links,
+\begin{align}
+  P_{\mathrm{neg}\to\mathrm{pos}}(t) &= \sigma\bigl(a_0 + a_1\,\pipos(t-1)\bigr),
+   \\
+  P_{\mathrm{pos}\to\mathrm{neg}}(t) &= \sigma\bigl(b_0 + b_1\,\pipos(t-1)\bigr),
+\end{align}
+with the other two entries of $P_t$ fixed by the row-sum constraint. At
+$a_1=b_1=0$ this exactly nests Model 2z, giving a clean LRT with
+$\mathrm{df}=2$.
+
+\paragraph{Optimisation and validation.} Optimisation is again Nelder--Mead
+with multi-start. We perform a synthetic recovery sanity-check for the
+multivariate Hawkes ($T=500$, parameters
+$\mu_{\mathrm{neg}}=3.0$, $\mu_{\mathrm{pos}}=5.0$ and a $2{\times}2$
+branching matrix); the multi-start fit recovers all six parameters with a
+maximum relative error of $20.3\%$, which we deemed acceptable for downstream
+inference. The single-start version of the optimiser failed badly on the
+same synthetic data (max relative error $1.48$), confirming the value of the
+multi-start.
+
+\subsection{Reproducibility checklist}
+\label{sec:repro}
+
+The full analysis is reproducible from this repository: \texttt{loader.py}
+ingests CC-News and joins NewsGuard;
+\texttt{partAresults/fit\_models.py} fits SP, IHP, and Hawkes;
+\texttt{partAresults/fit\_hybrid.py} fits the hybrid;
+\texttt{partBresults/fit\_models\_partB.py} fits all four Part-B candidates
+and produces all figures referenced below. Per-event configurations live in
+\texttt{events/*.toml}; the published code intentionally exposes the
+multi-start grid so that the synthetic-recovery diagnostic is reproducible
+on demand.
+
+% =================================================================
+\section{Results}
+\label{sec:results}
+% =================================================================
+
+\subsection{Part A on Las Vegas 2017: counts}
+\label{sec:results-partA-LV}
+
+\paragraph{Profile sweep and AR(1) collapse.}
+The Hawkes profile-likelihood sweep over $\beta$ (Table~\ref{tab:beta-profile})
+is monotone increasing in $\beta$ and stable to four decimal places for
+$\beta\geq 10$. The plateau value
+$(\hat\mu,\hat n)=(11.50, 0.6137)$ defines the AR(1) Hawkes we report as
+Model C in Table~\ref{tab:partA-models}. Figure~\ref{fig:partA-beta-profile}
+visualises the sweep.
+
+\begin{table}[H]
+\centering
+\caption{Profile log-likelihood of the discrete-time Hawkes model on Las
+Vegas 2017 over a log-grid in the kernel decay $\beta$.
+Re-optimisation of $(\mu,n)$ at each fixed $\beta$. The profile is
+monotone in $\beta$ and plateaus at $\beta\geq 10$, where the kernel
+collapses to a one-step lag.}
+\label{tab:beta-profile}
+\begin{tabular}{rrrr}
+\toprule
+$\beta$ & $\hat\mu$ & $\hat n$ & Log-likelihood \\
+\midrule
+$0.05$  & $17.66$ & $0.424$ & $-3670.5$ \\
+$0.10$  & $12.29$ & $0.595$ & $-3165.5$ \\
+$0.20$  & $11.15$ & $0.630$ & $-2692.5$ \\
+$0.30$  & $11.02$ & $0.633$ & $-2472.4$ \\
+$0.50$  & $11.07$ & $0.630$ & $-2263.5$ \\
+$1.00$  & $11.25$ & $0.623$ & $-2092.6$ \\
+$2.00$  & $11.40$ & $0.617$ & $-2021.4$ \\
+$5.00$  & $11.50$ & $0.614$ & $-2004.4$ \\
+$10.00$ & $11.50$ & $0.614$ & $-2003.8$ \\
+$20.00$ & $11.50$ & $0.614$ & $-2003.8$ \\
+$32.00$ & $11.50$ & $0.614$ & $-2003.8$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{partAresults/las_vegas_2017/fig8_hawkes_beta_profile.png}
+\caption{Hawkes profile log-likelihood vs.\ kernel decay $\beta$ on Las
+Vegas 2017. Monotone in $\beta$, plateauing for $\beta\!\geq\!10$. The
+plateau is the AR(1) limit of \eqref{eq:ar1} with
+$\hat\mu\approx 11.50$, $\hat n\approx 0.614$.}
+\label{fig:partA-beta-profile}
+\end{figure}
+
+\paragraph{Model comparison.} Table~\ref{tab:partA-models} compares all
+five models on AIC, BIC, log-likelihood, and Pearson dispersion (the
+sample variance of the standardised residuals
+$(N(t)-\lambda(t))/\sqrt{\lambda(t)}$, ideal value $1$).
+
+\begin{table}[H]
+\centering
+\caption{Part A: model comparison on the Las Vegas 2017 cascade
+($T=91$ days).}
+\label{tab:partA-models}
+\begin{tabular}{lrrrrr}
+\toprule
+Model & \# Params & Log-Lik. & AIC & BIC & Pearson Var \\
+\midrule
+Standard Poisson         & $1$ & $-3835.11$ & $7672.22$ & $7674.73$ & $196.26$ \\
+Inhomogeneous Poisson    & $3$ & $-513.15$  & $1032.29$ & $1039.82$ & $8.52$   \\
+Hawkes (AR-1 limit)      & $2$ & $-2003.81$ & $4011.62$ & $4016.65$ & $225.10$ \\
+Hybrid IHP+Hawkes (AR-1) & $4$ & $-388.79$  & $785.59$  & $795.63$  & $5.10$   \\
+\textbf{Hybrid IHP+Hawkes (full)} & $\mathbf{5}$ & $\mathbf{-371.40}$ & $\mathbf{752.80}$ & $\mathbf{765.35}$ & $\mathbf{4.48}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Likelihood-ratio tests.} Both pure models are overwhelmingly
+preferred to Standard Poisson; the hybrid additions are also significant.
+
+\begin{table}[H]
+\centering
+\caption{Likelihood-ratio tests on Las Vegas 2017. Each comparison nests
+the smaller model strictly.}
+\label{tab:partA-LRT}
+\begin{tabular}{lrrl}
+\toprule
+Comparison & LR statistic & df & $p$-value \\
+\midrule
+SP vs.\ IHP                  & $6{,}643.9$ & $2$ & $<10^{-300}$ \\
+SP vs.\ Hawkes               & $3{,}662.6$ & $1$ & $<10^{-300}$ \\
+IHP vs.\ Hybrid-AR1          & $248.7$     & $1$ & $\approx 0$  \\
+Hybrid-AR1 vs.\ Hybrid-full  & $34.79$     & $1$ & $3.7\times 10^{-9}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Why the hybrid wins: the day-0 decomposition.}
+Pure Hawkes loses to IHP (and to the hybrids) almost entirely because of
+day~0. With $R(0)=0$, pure Hawkes predicts
+$\lambda(0)=\mu=11.5$ against the observation $N(0)=489$, contributing
+$-1{,}360.13$ to the log-likelihood --- $\approx 91\%$ of the entire
+Hawkes--IHP gap of $1490.7$. The IHP and hybrid models can absorb the
+exogenous shock through the $A\,e^{-\beta_0\cdot 0}=A$ term:
+\begin{center}
+\begin{tabular}{lcr}
+\toprule
+Model & $\lambda(0)$ & Day-0 log-lik \\
+\midrule
+IHP                    & $450.6$ & $-5.60$    \\
+Hawkes (AR-1)          & $11.5$  & $-1360.13$ \\
+Hybrid (AR-1)          & $489.0$ & $-4.02$    \\
+Hybrid (full)          & $539.8$ & $-6.49$    \\
+\bottomrule
+\end{tabular}
+\end{center}
+Hybrid-AR1 lands $\lambda(0)$ \emph{exactly} on the observed $489$ articles
+(the optimiser drives $A+c$ onto the data), then hands propagation off to a
+self-excitation term with branching ratio $\hat n=0.7248$.
+
+\paragraph{Two timescales in Hybrid-full.}
+The full hybrid separates the cascade into two distinct decay timescales: an
+IHP half-life of $\ln 2 / 0.397 \approx 1.75$ days for the fast initial
+decline, and a Hawkes-kernel half-life of
+$\ln 2 / 0.0848 \approx 8.2$ days for the slower self-sustaining tail.
+Figure~\ref{fig:partA-hybrid-decomp} stacks the two components on top of
+each other; Figure~\ref{fig:partA-overlay} overlays all five models against
+the observed counts; Figure~\ref{fig:partA-criteria} summarises the AIC/BIC
+ranking.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{partAresults/las_vegas_2017/fig13_hybrid_decomposition.png}
+\caption{Hybrid-AR1 decomposition on Las Vegas 2017. The IHP term collapses
+to a near-delta spike that absorbs the day-0 burst (initial amplitude
+$A\approx 487$, $\beta_0=2.22 \Rightarrow$ half-life $0.31$ days), and the
+self-excitation term ($n=0.7248$) carries the subsequent endogenous
+dynamics.}
+\label{fig:partA-hybrid-decomp}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{partAresults/las_vegas_2017/fig11_all_models_overlay.png}
+\caption{All five Part-A models overlaid on the observed daily article
+counts (Las Vegas 2017).}
+\label{fig:partA-overlay}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{partAresults/las_vegas_2017/fig12_all_models_criteria.png}
+\caption{AIC, BIC, and log-likelihood bar charts for all five Part-A
+models. The hybrid family dominates by a wide margin.}
+\label{fig:partA-criteria}
+\end{figure}
+
+\paragraph{Known limitation: weekly seasonality.}
+Pearson residuals exhibit strong weekly periodicity: lag-1 autocorrelation
+$\rho_1=0.59$, lag-7 $\rho_7=0.61$, lag-14 $\rho_{14}=0.39$. Day-of-week
+mean Pearson residuals run Wed $+2.07$, Thu $+1.26$, Fri $+0.42$,
+Mon $-0.05$, Tue $-0.11$, Sun $-1.63$, Sat $-1.94$. An exploratory fit
+adding six multiplicative day-of-week factors buys
+$\Delta\mathrm{AIC}\approx -148$ on top of Hybrid-full
+(weekly-augmented Hybrid-full reaches AIC $604.68$); we report this as a
+diagnostic rather than the headline model.
+
+\subsection{Part B on Las Vegas 2017: reliability split}
+\label{sec:results-partB-LV}
+
+\paragraph{Model comparison.}
+On the shared conditional binomial likelihood
+\eqref{eq:binom-LL} over the $86$ non-empty days, the four candidate
+models compare as in Table~\ref{tab:partB-models}.
+
+\begin{table}[H]
+\centering
+\caption{Part B: model comparison on Las Vegas 2017. Common conditional
+binomial log-likelihood.}
+\label{tab:partB-models}
+\begin{tabular}{lrrrr}
+\toprule
+Model & \# Params & Log-Lik. & AIC & BIC \\
+\midrule
+Multivariate Hawkes        & $6$ & $-156.93$ & $325.87$ & $340.60$ \\
+Homogeneous Markov         & $2$ & $-162.75$ & $329.50$ & $334.41$ \\
+\textbf{State-dependent Markov} & $\mathbf{4}$ & $\mathbf{-157.33}$ & $\mathbf{322.65}$ & $\mathbf{332.47}$ \\
+Mean-field Markov          & $4$ & $-157.56$ & $323.13$ & $332.94$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The state-dependent Markov is the AIC winner. Mean-field Markov is a
+statistically indistinguishable second ($\Delta\mathrm{AIC}=0.48$).
+Multivariate Hawkes beats the homogeneous baseline on raw log-likelihood
+(by $5.82$) but pays $+8$ in AIC for its $4$ extra parameters and so loses
+on AIC.
+
+\begin{table}[H]
+\centering
+\caption{Likelihood-ratio tests vs.\ the homogeneous Markov null on
+Las Vegas 2017. Hawkes does not nest the Markov family, so AIC/BIC are
+used for that comparison.}
+\label{tab:partB-LRT}
+\begin{tabular}{lrrl}
+\toprule
+Comparison & LR statistic & df & $p$-value \\
+\midrule
+State-dep Markov vs.\ Homogeneous  & $10.85$ & $2$ & $4.4\times 10^{-3}$ \\
+Mean-field Markov vs.\ Homogeneous & $10.37$ & $2$ & $5.6\times 10^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Multivariate Hawkes branching matrix.}
+The fitted branching matrix on Las Vegas 2017
+(rows = triggered category, columns = triggering category) is
+\begin{equation}
+  n =
+  \begin{pmatrix}
+    n_{\mathrm{neg},\mathrm{neg}} & n_{\mathrm{neg},\mathrm{pos}} \\
+    n_{\mathrm{pos},\mathrm{neg}} & n_{\mathrm{pos},\mathrm{pos}}
+  \end{pmatrix}
+  =
+  \begin{pmatrix}
+    0.4386 & 0.1577 \\
+    0.3217 & 0.3720
+  \end{pmatrix},
+  \qquad
+  \mu = (3.12,\ 8.38),
+\end{equation}
+with spectral radius $\rho(n)=0.633$ (sub-critical).
+The off-diagonals are non-negligible: an unreliable article today triggers
+about $n_{\mathrm{pos},\mathrm{neg}}=0.32$ reliable articles tomorrow on
+average (likely fact-checks, debunks, follow-ups), while a reliable article
+triggers about $n_{\mathrm{neg},\mathrm{pos}}=0.16$ unreliable articles
+tomorrow --- half as much in the reverse direction.
+Figure~\ref{fig:partB-branching} visualises the branching matrix as a
+heatmap.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\linewidth]{partBresults/las_vegas_2017/fig3_hawkes_branching_heatmap.png}
+\caption{Multivariate Hawkes branching matrix on Las Vegas 2017
+(rows = triggered, columns = triggering). Diagonally dominant but not
+overwhelmingly so; off-diagonals reveal genuine cross-excitation between
+the reliable and unreliable streams.}
+\label{fig:partB-branching}
+\end{figure}
+
+\paragraph{Regime-switching Markov.}
+The two regime-conditional transition matrices are:
+\begin{align}
+  P^{(\mathrm{neg})}
+  &=
+  \begin{pmatrix}
+    0.2745 & 0.7255 \\
+    0.5879 & 0.4121
+  \end{pmatrix},
+  \qquad
+  P^{(\mathrm{pos})}
+  =
+  \begin{pmatrix}
+    0.6818 & 0.3182 \\
+    0.2354 & 0.7646
+  \end{pmatrix}.
+\end{align}
+Rows are the source state (neg / pos), columns the destination. The two
+regimes have qualitatively different dynamics:
+\emph{pos-majority} is sticky on both diagonals
+($P^{(\mathrm{pos})}_{\mathrm{neg}\to\mathrm{neg}}=0.68$,
+$P^{(\mathrm{pos})}_{\mathrm{pos}\to\mathrm{pos}}=0.76$), while the rare
+\emph{neg-majority} regime aggressively pushes back toward pos
+($P^{(\mathrm{neg})}_{\mathrm{neg}\to\mathrm{pos}}=0.7255$,
+$P^{(\mathrm{neg})}_{\mathrm{pos}\to\mathrm{neg}}=0.5879$). The system has a
+strong restoring force toward its empirical equilibrium near
+$\pipos\approx 0.63$. See Figure~\ref{fig:partB-regime-mats}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{partBresults/las_vegas_2017/fig5_markov_regime_matrices.png}
+\caption{State-dependent Markov on Las Vegas 2017: the two regime-conditional
+$2{\times}2$ transition matrices. The pos-majority matrix is sticky on both
+diagonals; the neg-majority matrix shows aggressive mean reversion toward
+the reliable state.}
+\label{fig:partB-regime-mats}
+\end{figure}
+
+\paragraph{Mean-field Markov.}
+Fitted parameters
+$(a_0,a_1,b_0,b_1)=(+1.1496,-3.9587,-2.0828,+0.8184)$. At
+$\pipos(t-1)=0$ the link gives
+$P_{\mathrm{neg}\to\mathrm{pos}}=\sigma(1.15)=0.76$ (strong flip back to pos
+when pos is absent); at $\pipos(t-1)=1$ it gives
+$P_{\mathrm{neg}\to\mathrm{pos}}=\sigma(-2.81)=0.06$ (almost no flips when
+pos already dominates). The decreasing logistic shape of
+$P_{\mathrm{neg}\to\mathrm{pos}}$ as a function of yesterday's $\pipos$ is
+the smooth analogue of the regime-switching mean reversion observed in 2a.
+Figure~\ref{fig:partB-meanfield} plots the fitted curves and trajectory.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{partBresults/las_vegas_2017/fig6_meanfield_P_trajectory.png}
+\caption{Mean-field Markov on Las Vegas 2017: fitted logistic links
+$P_{\mathrm{neg}\to\mathrm{pos}}(\pipos)$ and
+$P_{\mathrm{pos}\to\mathrm{neg}}(\pipos)$, plus the resulting time
+trajectory of the implied transition matrix entries.}
+\label{fig:partB-meanfield}
+\end{figure}
+
+\paragraph{Fitted-vs-observed proportions and AIC summary.}
+All four candidate models track the empirical $\pipos$ similarly after
+day~5; the difference is concentrated in the first week (the shock window),
+which is exactly where the regime-switching matrix earns its extra
+parameters. Figure~\ref{fig:partB-fitted} shows the four trajectories on
+one panel; Figure~\ref{fig:partB-criteria} shows the AIC/BIC bar chart.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{partBresults/las_vegas_2017/fig7_fitted_proportion_comparison.png}
+\caption{Fitted reliable-fraction $q_t$ for all four Part-B candidates on
+Las Vegas 2017, against the observed $\pipos(t)$ with Wilson 95\% bands.}
+\label{fig:partB-fitted}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{partBresults/las_vegas_2017/fig9_model_comparison.png}
+\caption{Part B: AIC, BIC, and log-likelihood bar charts (Las Vegas 2017,
+common binomial scale).}
+\label{fig:partB-criteria}
+\end{figure}
+
+\subsection{Cross-event replication: Hurricane Harvey 2017}
+\label{sec:results-harvey}
+
+We re-fit the same Part-A and Part-B pipelines on the Hurricane Harvey 2017
+event (CC-News + NewsGuard, same loader configuration, single keyword TOML
+swap). Headline numbers are summarised in
+Tables~\ref{tab:harvey-partA} and~\ref{tab:harvey-partB}.
+
+\begin{table}[H]
+\centering
+\caption{Part A on Hurricane Harvey 2017. Pure Hawkes-AR1 wins; the hybrid
+provides no improvement because the hybrid optimiser collapses the IHP
+component (the fitted $A$ is essentially zero), reflecting that Harvey's
+coverage builds endogenously over multiple days rather than through a
+sharp day-0 shock.}
+\label{tab:harvey-partA}
+\begin{tabular}{lrrrrr}
+\toprule
+Model & \# Params & Log-Lik. & AIC & BIC & Pearson Var \\
+\midrule
+Standard Poisson         & $1$ & $-5343.00$ & $10688.00$ & $10691.02$ & $238.63$ \\
+Inhomogeneous Poisson    & $3$ & $-4539.47$ & $9084.94$  & $9094.00$  & $124.11$ \\
+\textbf{Hawkes (AR-1 limit)} & $\mathbf{2}$ & $\mathbf{-905.20}$  & $\mathbf{1814.41}$  & $\mathbf{1820.44}$ & $\mathbf{16.67}$ \\
+Hybrid IHP+Hawkes (AR-1) & $4$ & $-904.56$  & $1817.13$  & $1829.20$  & $16.80$ \\
+Hybrid IHP+Hawkes (full) & $5$ & $-904.56$  & $1819.13$  & $1834.21$  & $16.80$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Part B on Hurricane Harvey 2017. State-dependent Markov is again the
+AIC winner, but the homogeneous baseline is much closer than on Las Vegas:
+the system spends little time in the rare regime, so regime-specific
+corrections buy less.}
+\label{tab:harvey-partB}
+\begin{tabular}{lrrrr}
+\toprule
+Model & \# Params & Log-Lik. & AIC & BIC \\
+\midrule
+Multivariate Hawkes        & $6$ & $-126.39$ & $264.79$ & $278.69$ \\
+Homogeneous Markov         & $2$ & $-124.27$ & $252.54$ & $257.17$ \\
+\textbf{State-dependent Markov} & $\mathbf{4}$ & $\mathbf{-121.53}$ & $\mathbf{251.06}$ & $\mathbf{260.33}$ \\
+Mean-field Markov          & $4$ & $-122.79$ & $253.59$ & $262.85$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The Harvey replication is qualitative confirmation that the methodology is
+generic: same loader, same fitting code, same scoring rule, same diagnostics.
+The specific winner of Part~A is event-dependent --- Las Vegas's day-0 spike
+demands the hybrid's exogenous-trigger term, while Harvey's gradual
+endogenous build-up is fit well by pure Hawkes alone. The Part-B winner
+remains the state-dependent Markov, but the gap to the homogeneous baseline
+shrinks because Harvey spends fewer days in the neg-majority regime.
+
+\paragraph{A keyword-filter caveat for Harvey.}
+The two events are not on equal keyword footing. The Las Vegas filter
+(\texttt{events/las\_vegas\_shooting\_2017.toml}) keys on event-specific
+phrases such as ``mandalay bay'', ``stephen paddock'', ``route 91 harvest'',
+and ``deadliest mass shooting'', which admit only articles substantively
+about the event. The Harvey filter
+(\texttt{events/hurricane\_harvey\_2017.toml}) is necessarily broader
+(``harvey damage'', ``harvey recovery'', ``harvey relief'', ``harvey
+texas'', ``houston flooding'', ``texas flooding'') and therefore admits
+articles that mention the storm only incidentally --- in particular,
+financial/insurance/energy reporting (Q3 disruptions, sector exposures,
+reinsurance impact). This noise plausibly contributes to several Harvey
+results: (i) the absence of a sharp day-0 spike, since incidental mentions
+arrive throughout the window rather than being concentrated on the day of
+the event, which in turn collapses the hybrid's exogenous-trigger
+component (the fitted IHP amplitude on Harvey is essentially zero) and
+leaves pure Hawkes-AR1 as the AIC winner; (ii) a flatter, longer count
+tail that is fit comfortably by a Hawkes branching ratio of $\hat n\approx
+0.95$ (very close to critical); and (iii) a shrunken regime-switching
+benefit on the reliability split, since incidental business reporting
+likely comes from a different reliability mix than substantive event
+coverage and dilutes the signal that drives the rare neg-majority regime
+on Las Vegas. The cross-event comparison should therefore be read as
+\emph{methodological replication, not a head-to-head model verdict}; a
+fair head-to-head comparison would require a keyword pipeline of equal
+specificity for both events, which we leave to future work.
+
+% =================================================================
+\section{Discussion}
+\label{sec:discussion}
+% =================================================================
+
+\paragraph{Headline takeaways.}
+Two structural conclusions survive the comparison.
+\begin{enumerate}
+  \item For the count process, a hybrid IHP\,+\,Hawkes is the right model on
+        events with a sharp exogenous shock. The hybrid decomposition
+        matches the underlying mechanism: an exogenous trigger handles the
+        first-day burst, and an endogenous self-excitation kernel carries
+        the subsequent decay. On Las Vegas the two timescales are
+        cleanly identifiable
+        (IHP half-life $\approx 1.75$ days, Hawkes kernel half-life
+        $\approx 8.2$ days).
+  \item For the reliability split, a state-dependent (regime-switching)
+        Markov chain is the most parameter-efficient model and gives the
+        cleanest physical reading: a \emph{mean-reverting reliability
+        ecology} around $\pipos\approx 0.63$. When the system slips into the
+        rare neg-majority regime (only the first few shock days), the
+        next-day transition probabilities push aggressively back toward
+        reliable dominance.
+\end{enumerate}
+
+\paragraph{Why Markov beats Hawkes on the split.}
+On the binomial-conditional scale, Markov beats Hawkes despite using fewer
+parameters because:
+(i) Hawkes spends parameter capacity on predicting the \emph{total} count,
+which is conditioned out by \eqref{eq:cond-binomial};
+(ii) $\approx\!86\%$ of Las Vegas days are pos-majority
+($74$ of $86$ non-empty days), so a single homogeneous $P$ already captures
+the dominant regime, and the regime-specific tweak in 2a adds value
+\emph{exactly} on the days where it is needed --- the initial neg-majority
+shock window.
+
+\paragraph{Two model choices answer two different questions.}
+The Markov family parameterises the conditional distribution we score on,
+and so wins the AIC competition for forecasting tomorrow's reliability mix.
+The multivariate Hawkes parameterises cross-excitation between the two
+streams, and so wins on \emph{interpretation} questions of the form ``what
+kind of article triggers what kind of article tomorrow?''. The branching
+matrix entries $n_{\mathrm{pos},\mathrm{neg}}=0.32$ and
+$n_{\mathrm{neg},\mathrm{pos}}=0.16$ are not visible from the Markov fit at
+all. Choice of model should follow the question.
+
+\paragraph{Strengths.}
+The contribution we are most confident in is the methodological one: a
+shared conditional binomial likelihood that is honest about what each model
+predicts and puts Hawkes and Markov on a single AIC scale. The hybrid
+IHP\,+\,Hawkes count model and the mean-field Markov split model both nest
+their respective null benchmarks cleanly, so the LRTs in
+Tables~\ref{tab:partA-LRT} and~\ref{tab:partB-LRT} are exact.
+
+\paragraph{Limitations.}
+\begin{itemize}
+  \item The binary $\pm 1$ reliability label loses the magnitude of the
+        underlying NewsGuard score; a $92$ and a $55$ are both ``reliable''.
+  \item Day-level binning hides intraday bursts; a 3\,pm press conference is
+        invisible.
+  \item Single-event window for the headline analysis. The Hurricane Harvey
+        replication is partial; Nice 2016, Syrian civil war, and Zika 2016
+        configs are prepared in \texttt{events/} but not yet fit.
+  \item Weekly seasonality is real (lag-7 residual autocorrelation
+        $\rho_7=0.61$ on Las Vegas) but not folded into the headline model.
+        $\Delta\mathrm{AIC}\approx -148$ left on the table, per
+        \S\ref{sec:results-partA-LV}.
+  \item The Hawkes synthetic-recovery sanity check passes at $T=500$ with
+        $\approx\!20\%$ max relative error, which is acceptable for our
+        purposes but not tight; real-data Hawkes parameter estimates carry
+        that uncertainty.
+  \item Keyword-filter precision varies across events. The Las Vegas
+        filter is tightly event-specific (``mandalay bay'', ``stephen
+        paddock'', ``route 91 harvest''); the Harvey filter is necessarily
+        broader (``harvey damage'', ``harvey relief'', ``houston
+        flooding'') and admits articles that reference the storm only
+        incidentally, including financial/insurance/energy coverage. This
+        confounds the cross-event comparison in \S\ref{sec:results-harvey}
+        --- some of the structural difference attributed to the
+        \emph{event} (gradual build-up vs.\ sharp day-0 shock) is
+        plausibly driven by the \emph{filter} (broad vs.\ narrow). A
+        defensible cross-event verdict would require a keyword pipeline
+        of matched precision, e.g.\ via a downstream classifier that
+        rejects incidental mentions.
+\end{itemize}
+
+\paragraph{Verification, validation, and extensions.}
+Beyond the synthetic recovery already reported, the natural validation
+exercises are: (a) parameter recovery on a wider grid of synthetic
+parameters; (b) posterior-predictive simulation of $N(t)$ and $\pipos(t)$
+trajectories; (c) held-out-window forecasting (fit on days $0$--$60$,
+forecast days $61$--$90$). Promising model extensions include:
+
+\begin{itemize}
+  \item \emph{McKean--Vlasov / distribution-dependent SDE.} Replace the
+        discrete-time Markov chain on $\pipos(t)$ with a continuous-time SDE
+        whose drift depends on the empirical measure of $\pipos$. This
+        generalises the mean-field Markov to a true distribution-dependent
+        process and would let us derive analytic expressions for first-passage
+        times, equilibrium distributions, and rare-event probabilities.
+  \item \emph{Continuous reliability scores.} Drop the median threshold and
+        model the raw NewsGuard score as a real-valued mark on each event,
+        recovering within-class heterogeneity that the binary label hides.
+  \item \emph{Cross-event replication beyond Harvey.} Run the same fitting
+        pipeline on Nice 2016, Syrian civil war, and Zika 2016, all of which
+        already have prepared configs.
+  \item \emph{Joint count + split + weekly model.} Combine the multivariate
+        Hawkes count layer with the regime-switching Markov split layer and
+        add day-of-week multipliers (which the Las Vegas Part-A diagnostic
+        suggests are worth $\Delta\mathrm{AIC}\approx -148$). The likelihood
+        for such a joint model factorises into a count piece and a binomial
+        piece, both of which we already know how to fit.
+\end{itemize}
+
+\paragraph{Summary.}
+A news cascade is most naturally modelled as two coupled stochastic
+processes on the same event timeline. The hybrid IHP\,+\,Hawkes wins on the
+count process precisely because it matches the two-mechanism structure of a
+breaking-news cycle: an exogenous shock followed by endogenous amplification.
+The Hawkes profile-likelihood plateau identifies an AR(1) limit, which is a
+first-order Markov chain, and so a Markov chain on the reliability state is
+the structurally correct discrete analogue for Part B. Within that family,
+the regime-switching variant wins on AIC and reveals an ecology that is
+mean-reverting toward a stable reliable-majority equilibrium.
+
+% =================================================================
+\begin{thebibliography}{9}
+
+\bibitem{CraneSornette2008}
+R.~Crane and D.~Sornette,
+\textit{Robust dynamic classes revealed by measuring the response function of a social system},
+Proceedings of the National Academy of Sciences, 105(41):15649--15653, 2008.
+
+\bibitem{Zhao2015SEISMIC}
+Q.~Zhao, M.~A.~Erdogdu, H.~Y.~He, A.~Rajaraman, and J.~Leskovec,
+\textit{SEISMIC: A self-exciting point process model for predicting tweet popularity},
+in Proceedings of KDD '15, 1513--1522, 2015.
+
+\bibitem{MishraRizoiuXie2016}
+S.~Mishra, M.-A.~Rizoiu, and L.~Xie,
+\textit{Feature driven and point process approaches for popularity prediction},
+in Proceedings of CIKM '16, 1069--1078, 2016.
+
+\bibitem{DaleyVereJones2003}
+D.~J.~Daley and D.~Vere-Jones,
+\textit{An Introduction to the Theory of Point Processes, Volume I: Elementary Theory and Methods},
+2nd ed., Springer, 2003.
+
+\bibitem{VosoughiRoyAral2018}
+S.~Vosoughi, D.~Roy, and S.~Aral,
+\textit{The spread of true and false news online},
+Science, 359(6380):1146--1151, 2018.
+
+\bibitem{AllcottGentzkow2017}
+H.~Allcott and M.~Gentzkow,
+\textit{Social media and fake news in the 2016 election},
+Journal of Economic Perspectives, 31(2):211--236, 2017.
+
+\bibitem{Tambuscio2015}
+M.~Tambuscio, G.~Ruffo, A.~Flammini, and F.~Menczer,
+\textit{Fact-checking effect on viral hoaxes: A model of misinformation spread in social networks},
+in Proceedings of the 24th International Conference on World Wide Web Companion, 977--982, 2015.
+
+\end{thebibliography}
+
+\end{document}
