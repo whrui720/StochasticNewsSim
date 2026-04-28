@@ -1,0 +1,45 @@
+[event]
+name           = "Hurricane Harvey 2017"
+ccnews_year    = "2017"
+publish_cutoff = "2017-08-01"
+output_prefix  = "hurricane_harvey_2017_scored"
+
+[keywords]
+# Specific enough to match anywhere in title or body text.
+anywhere = [
+    "hurricane harvey",
+    "tropical storm harvey",
+    "harvey flooding",
+    "harvey floods",
+    "harvey flood",
+    "harvey houston",
+    "harvey texas",
+    "harvey landfall",
+    "harvey destruction",
+    "harvey damage",
+    "harvey evacuation",
+    "harvey rescue",
+    "harvey relief",
+    "harvey recovery",
+    "harvey storm surge",
+    "houston flooding",
+    "houston floods",
+    "addicks reservoir",
+    "barker reservoir",
+    "buffalo bayou flood",
+    "rockport texas storm",
+    "southeast texas flood",
+    "corpus christi hurricane",
+]
+
+# Too generic for body text — only matched against article titles.
+title_only = [
+    "hurricane harvey",
+    "storm harvey",
+    "harvey flood",
+    "harvey flooding",
+    "houston flood",
+    "houston flooding",
+    "texas flooding",
+    "texas hurricane",
+]

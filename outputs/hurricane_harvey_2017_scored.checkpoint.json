@@ -1,0 +1,13 @@
+{
+  "ccnews_year": "2017",
+  "event_name": "Hurricane Harvey 2017",
+  "file_index": 1,
+  "output_prefix": "hurricane_harvey_2017_scored",
+  "publish_cutoff": "2017-08-01",
+  "rows_in_current_file": 4823,
+  "total_after_date_filter": 6270260,
+  "total_after_topic_filter": 24700,
+  "total_scanned": 9168111,
+  "total_written": 4823,
+  "version": 1
+}
