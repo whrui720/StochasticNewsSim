@@ -49,10 +49,10 @@ warnings.filterwarnings("ignore")
 
 # ─── paths ────────────────────────────────────────────────────────────────────
 DATA_PATH = (
-    "/home/hrwang/StochasticNewsSim/StochasticNewsSim/outputs/"
-    "las_vegas_shooting_2017_scored_part_0001_filtered.csv"
+    "../outputs/"
+    "hurricane_harvey_2017_scored_part_0001.csv"
 )
-OUT = "/home/hrwang/StochasticNewsSim/StochasticNewsSim/partBresults/"
+OUT = "../partBresults/hurricane_harvey_2017/"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

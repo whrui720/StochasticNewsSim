@@ -49,10 +49,10 @@ from scipy.special import gammaln
 warnings.filterwarnings("ignore")
 
 DATA_PATH = (
-    "/home/hrwang/StochasticNewsSim/StochasticNewsSim/outputs/"
-    "las_vegas_shooting_2017_scored_part_0001_filtered.csv"
+    "../outputs/"
+    "hurricane_harvey_2017_scored_part_0001.csv"
 )
-OUT = "/home/hrwang/StochasticNewsSim/StochasticNewsSim/partAresults/"
+OUT = "../partAresults/hurricane_harvey_2017/"
 
 # ─── 1. data preparation ──────────────────────────────────────────────────────
 df = pd.read_csv(DATA_PATH, usecols=["published_date"])

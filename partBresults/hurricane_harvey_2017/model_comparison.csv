@@ -1,0 +1,5 @@
+Model,LL_binom,# Params,AIC,BIC
+Multivariate Hawkes,-126.39,6,264.79,278.69
+Homogeneous Markov,-124.27,2,252.54,257.17
+State-dependent Markov,-121.53,4,251.06,260.33
+Mean-field Markov,-122.79,4,253.59,262.85
