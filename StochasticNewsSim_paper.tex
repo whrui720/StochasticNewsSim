@@ -18,7 +18,7 @@
        Joint Modelling of Counts and Reliability Composition \\
        in Event-Driven News Cascades}
 \author{Harry Wang \and Sriyan Madugula \and Ruthesh Thavamani}
-\date{MATH 460 --- Stochastic Modelling}
+\date{MATH 460 --- Stochastic Processes}
 
 \newcommand{\Npos}{N_{\mathrm{pos}}}
 \newcommand{\Nneg}{N_{\mathrm{neg}}}
@@ -239,32 +239,32 @@ Figure~\ref{fig:ar1-bridge}.
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    node distance=8mm and 14mm,
+    node distance=6mm and 12mm,
     every node/.style={align=center, font=\small},
-    box/.style={draw, rectangle, rounded corners=2pt, inner sep=4pt,
-                minimum height=8mm, minimum width=24mm},
-    pivot/.style={draw, rectangle, rounded corners=2pt, inner sep=4pt,
-                  minimum height=8mm, minimum width=42mm,
+    box/.style={draw, rectangle, rounded corners=2pt, inner sep=3pt,
+                minimum height=7mm, minimum width=24mm},
+    pivot/.style={draw, rectangle, rounded corners=2pt, inner sep=3pt,
+                  minimum height=7mm, minimum width=42mm,
                   thick, fill=black!7},
     arrow/.style={-Latex, thick}
 ]
   \node[box] (data) {CC-News + NewsGuard \\ daily counts};
   \node[box, right=of data] (partA) {Part A \\ count models for $N(t)$};
-  \node[box, above right=4mm and 16mm of partA] (sp)     {SP};
+  \node[box, above right=3mm and 14mm of partA] (sp)     {SP};
   \node[box, right=of partA]                    (ihp)    {IHP};
-  \node[box, below right=4mm and 16mm of partA] (hawkes) {Hawkes \\ $\lambda{=}\mu{+}\alpha R$};
-  \node[box, below=14mm of partA] (hybrid) {Hybrid IHP+Hawkes \\ (Part-A winner)};
-  \node[pivot, below=10mm of hawkes] (betaSweep) {$\beta$-profile sweep};
-  \node[pivot, below=8mm of betaSweep] (ar1)
+  \node[box, below right=3mm and 14mm of partA] (hawkes) {Hawkes \\ $\lambda{=}\mu{+}\alpha R$};
+  \node[box, below=10mm of partA] (hybrid) {Hybrid IHP+Hawkes \\ (Part-A winner)};
+  \node[pivot, below=7mm of hawkes] (betaSweep) {$\beta$-profile sweep};
+  \node[pivot, below=5mm of betaSweep] (ar1)
         {AR(1) limit: $\lambda(t){=}\mu{+}n N(t{-}1)$};
-  \node[pivot, below=8mm of ar1] (bridge)
+  \node[pivot, below=5mm of ar1] (bridge)
         {AR(1) on counts \\ = first-order Markov chain};
-  \node[box, below left=10mm and -6mm of bridge] (homog)     {Homogeneous $P$};
-  \node[box, below=10mm of bridge]               (stateDep)  {State-dep $P^{(x)}$};
-  \node[box, below right=10mm and -6mm of bridge](meanField) {Mean-field $P(\pipos)$};
-  \node[box, left=of bridge] (mvHawkes) {Multivariate Hawkes \\ (count comparator)};
-  \node[box, below=10mm of stateDep, fill=black!4] (binomLL)
+  \node[box, below left=7mm and -6mm of bridge] (homog)     {Homogeneous $P$};
+  \node[box, below=7mm of bridge]                (stateDep)  {State-dep $P^{(x)}$};
+  \node[box, below right=7mm and -6mm of bridge](meanField) {Mean-field $P(\pipos)$};
+  \node[box, below=7mm of stateDep, fill=black!4] (binomLL)
         {Shared binomial log-likelihood \\ AIC / BIC / LRT};
+  \node[box, left=of binomLL] (mvHawkes) {Multivariate Hawkes \\ (count comparator)};
 
   \draw[arrow] (data) -- (partA);
   \draw[arrow] (partA) -- (sp);
@@ -625,7 +625,7 @@ heatmap.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.6\linewidth]{partBresults/las_vegas_2017/fig3_hawkes_branching_heatmap.png}
+\includegraphics[width=0.45\linewidth]{partBresults/las_vegas_2017/fig3_hawkes_branching_heatmap.png}
 \caption{Multivariate Hawkes branching matrix on Las Vegas 2017
 (rows = triggered, columns = triggering). Diagonally dominant but not
 overwhelmingly so; off-diagonals reveal genuine cross-excitation between
@@ -773,12 +773,13 @@ remains the state-dependent Markov, but the gap to the homogeneous baseline
 shrinks because Harvey spends fewer days in the neg-majority regime.
 
 \paragraph{A keyword-filter caveat for Harvey.}
+\sloppy
 The two events are not on equal keyword footing. The Las Vegas filter
-(\texttt{events/las\_vegas\_shooting\_2017.toml}) keys on event-specific
+(\texttt{events/\allowbreak las\_vegas\_\allowbreak shooting\_2017.toml}) keys on event-specific
 phrases such as ``mandalay bay'', ``stephen paddock'', ``route 91 harvest'',
 and ``deadliest mass shooting'', which admit only articles substantively
 about the event. The Harvey filter
-(\texttt{events/hurricane\_harvey\_2017.toml}) is necessarily broader
+(\texttt{events/\allowbreak hurricane\_\allowbreak harvey\_2017.toml}) is necessarily broader
 (``harvey damage'', ``harvey recovery'', ``harvey relief'', ``harvey
 texas'', ``houston flooding'', ``texas flooding'') and therefore admits
 articles that mention the storm only incidentally --- in particular,
