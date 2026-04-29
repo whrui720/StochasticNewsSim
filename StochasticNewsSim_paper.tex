@@ -161,7 +161,7 @@ log-likelihood including the $\log N!$ normalization,
   \ell = \sum_{t=0}^{T-1}\Bigl[N(t)\log\lambda(t) - \lambda(t) - \log N(t)!\Bigr],
   \label{eq:poisson-LL}
 \end{equation}
-so that AIC and BIC are directly comparable across families.
+so that AIC and BIC are directly comparable.
 
 \paragraph{Standard Poisson (SP, 1 parameter).}
 $\lambda(t)=\lambda$ for all $t$; MLE in closed form,
@@ -375,7 +375,7 @@ multi-start.
 \subsection{Reproducibility checklist}
 \label{sec:repro}
 
-The full analysis is reproducible from this repository: \texttt{loader.py}
+The full analysis is reproducible from the provided repository: \texttt{loader.py}
 ingests CC-News and joins NewsGuard;
 \texttt{partAresults/fit\_models.py} fits SP, IHP, and Hawkes;
 \texttt{partAresults/fit\_hybrid.py} fits the hybrid;
@@ -481,7 +481,7 @@ IHP vs.\ Hybrid-AR1          & $248.7$     & $1$ & $\approx 0$  \\
 Pure Hawkes loses to IHP (and to the hybrids) almost entirely because of
 day~0. With $R(0)=0$, pure Hawkes predicts
 $\lambda(0)=\mu=11.5$ against the observation $N(0)=489$, contributing
-$-1{,}360.13$ to the log-likelihood --- $\approx 91\%$ of the entire
+$-1{,}360.13$ to the log-likelihood; $\approx 91\%$ of the entire
 Hawkes--IHP gap of $1490.7$. The IHP and hybrid models can absorb the
 exogenous shock through the $A\,e^{-\beta_0\cdot 0}=A$ term:
 \begin{center}
@@ -574,7 +574,7 @@ rather two groupings. On raw log-likelihood the three non-trivial models
 (Hawkes, state-dependent Markov, mean-field Markov) span only
 $\approx 0.6$ nats ($-156.93$ to $-157.56$); pairwise they are essentially
 indistinguishable on \emph{fit quality}. All three are $\approx\!5\text{--}6$
-nats better than the homogeneous Markov null --- a uniformly large gap that
+nats better than the homogeneous Markov null by a uniformly large gap that
 the LRTs in Table~\ref{tab:partB-LRT} formalize for the two nested Markov
 variants. AIC then breaks the within-group tie not by improved fit but by
 \emph{parameter accounting}: state-dependent and mean-field Markov each
@@ -622,7 +622,7 @@ The off-diagonals are non-negligible: an unreliable article today triggers
 about $n_{\mathrm{pos},\mathrm{neg}}=0.32$ reliable articles tomorrow on
 average (likely fact-checks, debunks, follow-ups), while a reliable article
 triggers about $n_{\mathrm{neg},\mathrm{pos}}=0.16$ unreliable articles
-tomorrow --- half as much in the reverse direction.
+tomorrow, with half as much in the reverse direction.
 Figure~\ref{fig:partB-branching} visualizes the branching matrix as a
 heatmap.
 
@@ -768,7 +768,7 @@ Mean-field Markov          & $4$ & $-122.79$ & $253.59$ & $262.85$ \\
 
 The Harvey replication is qualitative confirmation that the methodology is
 generic: same loader, same fitting code, same scoring rule, same diagnostics.
-The specific winner of Part~A is event-dependent --- Las Vegas's day-0 spike
+The specific winner of Part~A is event-dependent as Las Vegas's day-0 spike
 demands the hybrid's exogenous-trigger term, while Harvey's gradual
 endogenous build-up is fit well by pure Hawkes alone. The Part-B winner
 remains the state-dependent Markov, but the gap to the homogeneous baseline
@@ -784,7 +784,7 @@ about the event. The Harvey filter
 (\texttt{events/\allowbreak hurricane\_\allowbreak harvey\_2017.toml}) is necessarily broader
 (``harvey damage'', ``harvey recovery'', ``harvey relief'', ``harvey
 texas'', ``houston flooding'', ``texas flooding'') and therefore admits
-articles that mention the storm only incidentally --- in particular,
+articles that mention the storm only incidentally, particularly
 financial/insurance/energy reporting (Q3 disruptions, sector exposures,
 reinsurance impact). This noise plausibly contributes to several Harvey
 results: (i) the absence of a sharp day-0 spike, since incidental mentions
@@ -843,7 +843,7 @@ which is conditioned out by \eqref{eq:cond-binomial};
 (ii) $\approx\!86\%$ of Las Vegas days are pos-majority
 ($74$ of $86$ non-empty days), so a single homogeneous $P$ already
 captures the dominant regime, and the regime-specific tweak in 2b adds
-value \emph{exactly} on the days where it is needed --- the initial
+value \emph{exactly} on the days where it is needed: the initial
 neg-majority shock window. The honest reading is therefore ``Markov ties
 Hawkes on fit and wins on AIC via fewer parameters'', not ``Markov
 strictly outperforms Hawkes''.
@@ -870,11 +870,13 @@ Tables~\ref{tab:partA-LRT} and~\ref{tab:partB-LRT} are exact.
 \begin{itemize}
   \item The binary $\pm 1$ reliability label loses the magnitude of the
         underlying NewsGuard score; a $92$ and a $55$ are both ``reliable''.
+  \item The data labels are imbalanced. There are significantly more ``reliable" than 
+        ``unreliable" labels; this could be the true underlying cause of the mean-reverting
+        behavior, rather than the dynamic we've discussed.
   \item Day-level binning hides intraday bursts; a 3\,pm press conference is
         invisible.
   \item Single-event window for the headline analysis. The Hurricane Harvey
-        replication is partial; Nice 2016, Syrian civil war, and Zika 2016
-        configs are prepared in \texttt{events/} but not yet fit.
+        replication is partial and not explicitly comparable as ``single-shock" news story. 
   \item Weekly seasonality is real (lag-7 residual autocorrelation
         $\rho_7=0.61$ on Las Vegas) but not folded into the headline model.
         $\Delta\mathrm{AIC}\approx -148$ left on the table, per
@@ -890,7 +892,7 @@ Tables~\ref{tab:partA-LRT} and~\ref{tab:partB-LRT} are exact.
         flooding'') and admits articles that reference the storm only
         incidentally, including financial/insurance/energy coverage. This
         confounds the cross-event comparison in \S\ref{sec:results-harvey}
-        --- some of the structural difference attributed to the
+        where some of the structural difference attributed to the
         \emph{event} (gradual build-up vs.\ sharp day-0 shock) is
         plausibly driven by the \emph{filter} (broad vs.\ narrow). A
         defensible cross-event verdict would require a keyword pipeline
@@ -927,15 +929,15 @@ forecast days $61$--$90$). Promising model extensions include:
 \end{itemize}
 
 \paragraph{Summary.}
-A news cascade is most naturally modelled as two coupled stochastic
+A news cascade can be modelled as two coupled stochastic
 processes on the same event timeline. The hybrid IHP\,+\,Hawkes wins on the
 count process precisely because it matches the two-mechanism structure of a
 breaking-news cycle: an exogenous shock followed by endogenous amplification.
 The Hawkes profile-likelihood plateau identifies an AR(1) limit, which is a
 first-order Markov chain, and so a Markov chain on the reliability state is
 the structurally correct discrete analogue for Part B. Within that family,
-the regime-switching variant wins on AIC and reveals an ecology that is
-mean-reverting toward a stable reliable-majority equilibrium.
+the regime-switching variant wins on AIC and reveals a mean-reverting dynamic
+towards a stable reliable-majority equilibrium.
 
 % =================================================================
 \begin{thebibliography}{9}
