@@ -48,6 +48,14 @@ from scipy.special import gammaln
 
 warnings.filterwarnings("ignore")
 
+# ─── editable per-event constants ─────────────────────────────────────────────
+# To switch events, edit only the two lines below. Examples:
+#   Las Vegas 2017:
+#     DATA_PATH = "../outputs/las_vegas_shooting_2017_scored_part_0001_filtered.csv"
+#     OUT       = "../partAresults/las_vegas_2017/"
+#   Hurricane Harvey 2017:
+#     DATA_PATH = "../outputs/hurricane_harvey_2017_scored_part_0001.csv"
+#     OUT       = "../partAresults/hurricane_harvey_2017/"
 DATA_PATH = (
     "../outputs/"
     "hurricane_harvey_2017_scored_part_0001.csv"
@@ -76,12 +84,20 @@ print(f"Total arts  : {int(N.sum())}   Mean/day : {N.mean():.2f}   Max : {int(N.
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
 def poisson_loglik(rates, counts):
+    """Sum of independent Poisson log-likelihoods given per-day ``rates`` and ``counts``."""
     rates = np.maximum(rates, 1e-10)
     return float(np.sum(counts * np.log(rates) - rates - gammaln(counts + 1)))
 
-def aic(ll, k):    return -2 * ll + 2 * k
-def bic(ll, k, n): return -2 * ll + k * np.log(n)
+def aic(ll, k):
+    """Akaike Information Criterion: ``-2·LL + 2k``."""
+    return -2 * ll + 2 * k
+
+def bic(ll, k, n):
+    """Bayesian Information Criterion: ``-2·LL + k·log(n)``."""
+    return -2 * ll + k * np.log(n)
+
 def pearson_var(rates, counts):
+    """Variance of Pearson residuals ``(counts−rates)/√rates``; ≈1 if model fits well."""
     return float(np.var((counts - rates) / np.sqrt(np.maximum(rates, 1e-10))))
 
 # ─── 2. Standard Poisson ──────────────────────────────────────────────────────
@@ -97,6 +113,7 @@ print(f"  Pearson var = {pearson_var(rates_sp, N):.2f}  (ideal ≈ 1)")
 
 # ─── 3. Inhomogeneous Poisson — exp decay ─────────────────────────────────────
 def neg_ll_ihp(params):
+    """Negative log-likelihood of the IHP intensity ``λ(t) = A·exp(−β·t) + c``."""
     A, beta, c = params
     if A <= 0 or beta <= 0 or c <= 0: return 1e12
     return -poisson_loglik(A * np.exp(-beta * t_grid) + c, N)
@@ -132,6 +149,7 @@ def hawkes_lam_ar1(mu, n, counts):
     return lam
 
 def neg_ll_hk_ar1(params):
+    """Negative log-likelihood of the AR-1 Hawkes ``λ(t) = μ + n·N(t-1)``."""
     mu, n = params
     if mu <= 0 or n <= 0 or n >= 1: return 1e12
     lam = hawkes_lam_ar1(mu, n, N)

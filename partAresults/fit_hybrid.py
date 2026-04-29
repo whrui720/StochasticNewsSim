@@ -34,6 +34,14 @@ from scipy.special import gammaln
 
 warnings.filterwarnings("ignore")
 
+# ─── editable per-event constants ─────────────────────────────────────────────
+# To switch events, edit only the two lines below. Examples:
+#   Las Vegas 2017:
+#     DATA_PATH = "../outputs/las_vegas_shooting_2017_scored_part_0001_filtered.csv"
+#     OUT       = "../partAresults/las_vegas_2017/"
+#   Hurricane Harvey 2017:
+#     DATA_PATH = "../outputs/hurricane_harvey_2017_scored_part_0001.csv"
+#     OUT       = "../partAresults/hurricane_harvey_2017/"
 DATA_PATH = (
     "../outputs/"
     "hurricane_harvey_2017_scored_part_0001.csv"
@@ -61,12 +69,20 @@ print(f"Total arts : {int(N.sum())}   mean/day : {N.mean():.2f}   max : {int(N.m
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
 def poisson_loglik(rates, counts):
+    """Sum of independent Poisson log-likelihoods given per-day ``rates`` and ``counts``."""
     rates = np.maximum(rates, 1e-10)
     return float(np.sum(counts * np.log(rates) - rates - gammaln(counts + 1)))
 
-def aic(ll, k):    return -2 * ll + 2 * k
-def bic(ll, k, n): return -2 * ll + k * np.log(n)
+def aic(ll, k):
+    """Akaike Information Criterion: ``-2·LL + 2k``."""
+    return -2 * ll + 2 * k
+
+def bic(ll, k, n):
+    """Bayesian Information Criterion: ``-2·LL + k·log(n)``."""
+    return -2 * ll + k * np.log(n)
+
 def pearson_var(rates, counts):
+    """Variance of Pearson residuals ``(counts−rates)/√rates``; ≈1 if model fits well."""
     return float(np.var((counts - rates) / np.sqrt(np.maximum(rates, 1e-10))))
 
 # ─── 2. baseline reference fits (reproduce from fit_models.py) ─────────────────
@@ -77,6 +93,7 @@ ll_sp = poisson_loglik(rates_sp, N);  k_sp = 1
 
 # IHP
 def neg_ll_ihp(p):
+    """Negative log-likelihood of the IHP intensity ``λ(t) = A·exp(−β·t) + c``."""
     A, b, c = p
     if A <= 0 or b <= 0 or c <= 0: return 1e12
     return -poisson_loglik(A * np.exp(-b * t_grid) + c, N)
@@ -90,12 +107,14 @@ ll_ihp = poisson_loglik(rates_ihp, N);  k_ihp = 3
 
 # Hawkes AR-1
 def hk_ar1(mu, n, counts):
+    """Discrete Hawkes in the β→∞ AR-1 limit: ``λ(t) = μ + n·N(t-1)`` (``λ(0)=μ``)."""
     lam = np.empty(len(counts));  lam[0] = mu
     for t in range(1, len(counts)):
         lam[t] = mu + n * counts[t - 1]
     return lam
 
 def neg_ll_hk(p):
+    """Negative log-likelihood of the AR-1 Hawkes ``λ(t) = μ + n·N(t-1)``."""
     mu, n = p
     if mu <= 0 or n <= 0 or n >= 1: return 1e12
     return -poisson_loglik(hk_ar1(mu, n, N), N)
@@ -119,14 +138,20 @@ print(f"  Hawk  LL={ll_hk:.2f}  AIC={aic(ll_hk,k_hk):.2f}    μ̂={mu_hk:.3f}  n
 
 # ─── 3. Hybrid AR-1: λ(t) = A·exp(−β₀·t) + c + n·N(t-1) ───────────────────────
 def hyb_ar1_rates(A, b0, c, n, counts):
+    """Hybrid intensity (AR-1 limit): IHP decay + single-lag self-excitation.
+
+    Returns ``λ(t) = A·exp(−β₀·t) + c + n·N(t-1)``, with the self-excitation
+    term zeroed at ``t=0`` (no past events).
+    """
     T_ = len(counts)
     lam = np.empty(T_)
     ihp_part = A * np.exp(-b0 * np.arange(T_)) + c
-    lam[0] = ihp_part[0]                # no past events at t=0 → no Hawkes
+    lam[0] = ihp_part[0]
     lam[1:] = ihp_part[1:] + n * counts[:-1]
     return lam
 
 def neg_ll_hyb_ar1(p):
+    """Negative log-likelihood of the AR-1 hybrid model."""
     A, b0, c, n = p
     if A <= 0 or b0 <= 0 or c <= 0 or n <= 0 or n >= 1: return 1e12
     lam = hyb_ar1_rates(A, b0, c, n, N)
@@ -156,6 +181,12 @@ print(f"  Pearson var = {pearson_var(rates_h1, N):.2f}")
 
 # ─── 4. Hybrid full (IHP + exponential-kernel Hawkes, β₁ free) ────────────────
 def hyb_full_rates(A, b0, c, alpha, b1, counts):
+    """Hybrid intensity (full kernel): IHP decay + exponentially-decaying self-excitation.
+
+    Returns ``λ(t) = A·exp(−β₀·t) + c + α·R(t)`` where the recursive
+    self-exciting state evolves as ``R(t+1) = exp(−β₁)·(R(t) + N(t))``,
+    ``R(0) = 0``.
+    """
     T_ = len(counts)
     lam = np.empty(T_)
     decay = np.exp(-b1)
@@ -166,9 +197,9 @@ def hyb_full_rates(A, b0, c, alpha, b1, counts):
     return lam
 
 def neg_ll_hyb_full(p):
+    """Negative log-likelihood of the full hybrid model with free ``β₁``."""
     A, b0, c, alpha, b1 = p
     if A <= 0 or b0 <= 0 or c <= 0 or alpha <= 0 or b1 <= 0: return 1e12
-    # branching ratio n = alpha / (exp(b1) − 1) must be < 1
     n = alpha / (np.exp(b1) - 1.0)
     if n >= 1 or n <= 0: return 1e12
     lam = hyb_full_rates(A, b0, c, alpha, b1, N)

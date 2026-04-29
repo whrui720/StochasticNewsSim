@@ -1,3 +1,18 @@
+"""
+CCNews → per-event scored CSV pipeline.
+
+Streams a year of the Common Crawl News (CCNews) corpus, keeps only articles
+that match keywords from a TOML event config, joins each row against the
+news_media_reliability dataset on its publisher domain, drops rows without a
+NewsGuard score, and writes the result as sharded CSVs under ``outputs/``.
+
+The CCNews stream is large (millions of rows per year), so the run is
+crash-safe: progress is checkpointed to a JSON file every ``--flush-every``
+matching rows, and ``--resume`` continues from where a previous run stopped.
+
+Run with ``python loader.py --event-config events/<event>.toml``.
+"""
+
 import argparse
 import json
 import re
@@ -37,6 +52,7 @@ class EventConfig:
 
 
 def load_event_config(path: Path) -> EventConfig:
+	"""Parse a TOML event config and return an ``EventConfig`` instance."""
 	with open(path, "rb") as f:
 		data = tomllib.load(f)
 
@@ -61,6 +77,7 @@ def load_event_config(path: Path) -> EventConfig:
 
 
 def normalize_domain(value: object) -> str:
+	"""Lower-case a URL/domain and strip scheme, ``www.``, path, query, port."""
 	if value is None:
 		return ""
 
@@ -76,6 +93,7 @@ def normalize_domain(value: object) -> str:
 
 
 def get_first_dataset_split(dataset: DatasetDict | Dataset) -> Dataset:
+	"""Return ``dataset`` itself if already a ``Dataset``, otherwise its first split."""
 	if isinstance(dataset, Dataset):
 		return dataset
 	first_split = next(iter(dataset.keys()))
@@ -85,6 +103,7 @@ def get_first_dataset_split(dataset: DatasetDict | Dataset) -> Dataset:
 def get_first_iterable_split(
 	dataset: IterableDatasetDict | IterableDataset,
 ) -> IterableDataset:
+	"""Iterable-dataset variant of :func:`get_first_dataset_split`."""
 	if isinstance(dataset, IterableDataset):
 		return dataset
 	first_split = next(iter(dataset.keys()))
@@ -92,6 +111,7 @@ def get_first_iterable_split(
 
 
 def pick_first_field(available_fields: Iterable[str], candidates: list[str]) -> str | None:
+	"""Return the first name in ``candidates`` that appears in ``available_fields``."""
 	available_set = set(available_fields)
 	for candidate in candidates:
 		if candidate in available_set:
@@ -100,6 +120,7 @@ def pick_first_field(available_fields: Iterable[str], candidates: list[str]) -> 
 
 
 def parse_publish_datetime(value: object) -> pd.Timestamp | None:
+	"""Coerce ``value`` to a UTC ``pd.Timestamp``, or ``None`` if unparseable."""
 	if value is None:
 		return None
 
@@ -110,6 +131,7 @@ def parse_publish_datetime(value: object) -> pd.Timestamp | None:
 
 
 def as_lower_text(value: object) -> str:
+	"""Stringify ``value`` and return a lower-cased, trimmed copy (``""`` if ``None``)."""
 	if value is None:
 		return ""
 	return str(value).strip().lower()
@@ -122,6 +144,12 @@ def is_event_related(
 	keywords_anywhere: list[str],
 	keywords_title_only: list[str],
 ) -> bool:
+	"""Return ``True`` if the row's title or body matches any configured keyword.
+
+	``keywords_anywhere`` matches in title or body; ``keywords_title_only`` is
+	only checked against the title (used for terms too generic to match in
+	body text without false positives).
+	"""
 	title_text = as_lower_text(row.get(title_field)) if title_field else ""
 	body_text = as_lower_text(row.get(text_field)) if text_field else ""
 	full_text = f"{title_text}\n{body_text}"
@@ -138,6 +166,7 @@ def is_event_related(
 
 
 def resolve_publisher_value(row: dict[str, object], publisher_field: str | None) -> str:
+	"""Return the publisher domain for ``row``, falling back to the URL host."""
 	if publisher_field:
 		publisher_value = row.get(publisher_field)
 		if publisher_value:
@@ -153,6 +182,7 @@ def resolve_publisher_value(row: dict[str, object], publisher_field: str | None)
 
 
 def load_reliability_frame() -> pd.DataFrame:
+	"""Download news_media_reliability, normalize domains, and dedupe by domain."""
 	reliability_dataset = load_dataset("sergioburdisso/news_media_reliability")
 	reliability_split = get_first_dataset_split(reliability_dataset)
 	reliability_df = cast(pd.DataFrame, reliability_split.to_pandas())
@@ -167,15 +197,18 @@ def load_reliability_frame() -> pd.DataFrame:
 
 
 def clear_previous_outputs(output_dir: Path, output_prefix: str) -> None:
+	"""Delete all ``<prefix>_part_*.csv`` shards from a previous run."""
 	for file_path in output_dir.glob(f"{output_prefix}_part_*.csv"):
 		file_path.unlink()
 
 
 def get_checkpoint_path(output_dir: Path, output_prefix: str) -> Path:
+	"""Return the JSON checkpoint path for a given output prefix."""
 	return output_dir / f"{output_prefix}.checkpoint.json"
 
 
 def load_checkpoint(path: Path) -> dict[str, object] | None:
+	"""Load a JSON checkpoint, returning ``None`` if the file does not exist."""
 	if not path.exists():
 		return None
 
@@ -189,6 +222,7 @@ def load_checkpoint(path: Path) -> dict[str, object] | None:
 
 
 def save_checkpoint(path: Path, checkpoint: dict[str, object]) -> None:
+	"""Atomically write a checkpoint JSON via a ``.tmp`` rename."""
 	tmp_path = path.with_suffix(path.suffix + ".tmp")
 	with open(tmp_path, "w", encoding="utf-8") as f:
 		json.dump(checkpoint, f, indent=2, sort_keys=True)
@@ -197,6 +231,7 @@ def save_checkpoint(path: Path, checkpoint: dict[str, object]) -> None:
 
 
 def checkpoint_int(checkpoint: dict[str, object], key: str) -> int:
+	"""Read ``checkpoint[key]`` as an int, raising if missing or wrong type."""
 	value = checkpoint.get(key)
 	if not isinstance(value, int):
 		raise ValueError(f"Checkpoint key '{key}' is missing or not an integer.")
@@ -214,6 +249,7 @@ def build_checkpoint_data(
 	file_index: int,
 	rows_in_current_file: int,
 ) -> dict[str, object]:
+	"""Bundle current run progress into a checkpoint dictionary."""
 	return {
 		"version": 1,
 		"event_name": event_config.name,
@@ -238,6 +274,12 @@ def flush_filtered_rows(
 	file_index: int,
 	rows_in_current_file: int,
 ) -> tuple[int, int, int]:
+	"""Join a buffered batch of matching rows with reliability data and append to CSV shards.
+
+	Returns the updated ``(file_index, rows_in_current_file, rows_written_now)``.
+	Rows whose publisher is not in the reliability frame (no NewsGuard score)
+	are dropped here.
+	"""
 	if not filtered_rows:
 		return file_index, rows_in_current_file, 0
 
@@ -286,6 +328,7 @@ def write_joined_shards(
 	file_index: int,
 	rows_in_current_file: int,
 ) -> tuple[int, int, int]:
+	"""Append ``joined_df`` to ``<prefix>_part_NNNN.csv`` shards, rotating at ``rows_per_file``."""
 	rows_written = 0
 	start = 0
 
@@ -319,6 +362,15 @@ def run(
 	output_dir: Path,
 	output_prefix: str,
 ) -> None:
+	"""Stream CCNews, filter, join with reliability, and write CSV shards.
+
+	Iterates the streaming CCNews dataset for ``event_config.ccnews_year``,
+	keeps rows published on/after ``publish_cutoff`` whose title or body matches
+	the event keywords, joins each batch with the reliability frame, and writes
+	shards under ``output_dir`` with prefix ``output_prefix``. Progress is
+	checkpointed every ``flush_every`` matches; ``resume=True`` continues from
+	the last checkpoint.
+	"""
 	if flush_every <= 0:
 		raise ValueError("--flush-every must be greater than 0.")
 
@@ -528,6 +580,7 @@ def run(
 
 
 def parse_args() -> argparse.Namespace:
+	"""Parse command-line arguments for the loader."""
 	parser = argparse.ArgumentParser(
 		description=(
 			"Stream a CCNews year, filter by event keywords from a TOML config, "

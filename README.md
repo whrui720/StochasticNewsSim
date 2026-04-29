@@ -14,8 +14,7 @@ The repository contains:
   event-specific keywords from a TOML config, joins with the reliability
   dataset, and writes scored CSV shards.
 - [events/](events/) — one TOML file per event (Hurricane Harvey 2017,
-  Las Vegas Shooting 2017, Nice Attack 2016, Syrian Civil War 2016, Thai
-  Cave Rescue 2018, Zika Outbreak 2016).
+  Las Vegas Shooting 2017).
 - [partAresults/fit_models.py](partAresults/fit_models.py) and
   [partAresults/fit_hybrid.py](partAresults/fit_hybrid.py) — Part A models
   for total daily article counts: Standard Poisson, Inhomogeneous Poisson
@@ -95,7 +94,7 @@ in `../outputs/`) and `OUT` (the output directory under `partAresults/`).
 Edit them to switch events, e.g. for Las Vegas:
 
 ```python
-DATA_PATH = "../outputs/las_vegas_shooting_2017_scored_part_0001.csv"
+DATA_PATH = "../outputs/las_vegas_shooting_2017_scored_part_0001_filtered.csv"
 OUT       = "../partAresults/las_vegas_2017/"
 ```
 

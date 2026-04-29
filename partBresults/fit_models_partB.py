@@ -47,7 +47,14 @@ from scipy.stats import chi2
 
 warnings.filterwarnings("ignore")
 
-# ─── paths ────────────────────────────────────────────────────────────────────
+# ─── editable per-event constants ─────────────────────────────────────────────
+# To switch events, edit only the two lines below. Examples:
+#   Las Vegas 2017:
+#     DATA_PATH = "../outputs/las_vegas_shooting_2017_scored_part_0001_filtered.csv"
+#     OUT       = "../partBresults/las_vegas_2017/"
+#   Hurricane Harvey 2017:
+#     DATA_PATH = "../outputs/hurricane_harvey_2017_scored_part_0001.csv"
+#     OUT       = "../partBresults/hurricane_harvey_2017/"
 DATA_PATH = (
     "../outputs/"
     "hurricane_harvey_2017_scored_part_0001.csv"
@@ -95,11 +102,12 @@ print(f"Zero-total days : {int(np.sum(N_tot == 0))}")
 
 # ─── shared helpers ──────────────────────────────────────────────────────────
 def poisson_loglik(rates, counts):
+    """Sum of independent Poisson log-likelihoods given per-day ``rates`` and ``counts``."""
     rates = np.maximum(rates, 1e-10)
     return float(np.sum(counts * np.log(rates) - rates - gammaln(counts + 1)))
 
 def binom_loglik(k, n, p):
-    """Binomial log-likelihood, safely handling n=0 and boundary p."""
+    """Binomial log-likelihood, safely handling ``n=0`` rows and boundary ``p``."""
     k = np.asarray(k, dtype=float)
     n = np.asarray(n, dtype=float)
     p = np.clip(np.asarray(p, dtype=float), 1e-10, 1.0 - 1e-10)
@@ -110,9 +118,17 @@ def binom_loglik(k, n, p):
     log_coef = gammaln(n_ + 1) - gammaln(k_ + 1) - gammaln(n_ - k_ + 1)
     return float(np.sum(log_coef + k_ * np.log(p_) + (n_ - k_) * np.log(1 - p_)))
 
-def aic(ll, k):     return -2 * ll + 2 * k
-def bic(ll, k, n):  return -2 * ll + k * np.log(n)
-def sigmoid(x):     return 1.0 / (1.0 + np.exp(-x))
+def aic(ll, k):
+    """Akaike Information Criterion: ``-2·LL + 2k``."""
+    return -2 * ll + 2 * k
+
+def bic(ll, k, n):
+    """Bayesian Information Criterion: ``-2·LL + k·log(n)``."""
+    return -2 * ll + k * np.log(n)
+
+def sigmoid(x):
+    """Standard logistic sigmoid ``1 / (1 + exp(-x))``."""
+    return 1.0 / (1.0 + np.exp(-x))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -122,6 +138,12 @@ def sigmoid(x):     return 1.0 / (1.0 + np.exp(-x))
 # Params (6): μ_neg, μ_pos, n_{neg,neg}, n_{neg,pos}, n_{pos,neg}, n_{pos,pos}
 
 def hawkes_intensities_mv(params, N_neg, N_pos):
+    """Compute the per-day intensities of the bivariate AR-1 Hawkes process.
+
+    Returns ``(lam_neg, lam_pos)`` where
+    ``λ_k(t) = μ_k + n_{k,neg}·N_neg(t-1) + n_{k,pos}·N_pos(t-1)``
+    and ``λ_k(0) = μ_k`` (no past events).
+    """
     mu_n, mu_p, n_nn, n_np, n_pn, n_pp = params
     T_ = len(N_neg)
     lam_n = np.empty(T_); lam_p = np.empty(T_)
@@ -133,10 +155,10 @@ def hawkes_intensities_mv(params, N_neg, N_pos):
     return lam_n, lam_p
 
 def neg_ll_hawkes_mv(params):
+    """Negative joint Poisson log-likelihood of the bivariate Hawkes (with stationarity penalty)."""
     mu_n, mu_p, n_nn, n_np, n_pn, n_pp = params
     if mu_n <= 0 or mu_p <= 0:         return 1e12
     if any(v < 0 for v in [n_nn, n_np, n_pn, n_pp]):   return 1e12
-    # stationarity penalty: spectral radius of n-matrix < 1
     nmat = np.array([[n_nn, n_np], [n_pn, n_pp]])
     rho = max(abs(np.linalg.eigvals(nmat)))
     if rho >= 0.9999:  return 1e12
@@ -183,6 +205,7 @@ print(f"  Poisson LL (native) = {ll_hk_native:.2f}  (6 params)")
 # Days where N_tot(t) = 0 are skipped (binomial contribution is 0).
 
 def q_hawkes(lam_n, lam_p):
+    """Hawkes-implied pos-fraction ``q_t = λ_pos / (λ_pos + λ_neg)`` (0.5 if both are 0)."""
     denom = lam_n + lam_p
     return np.where(denom > 0, lam_p / np.maximum(denom, 1e-10), 0.5)
 
@@ -223,7 +246,10 @@ def q_markov(P_by_day, pi_pos_series):
 pi_pos_ff = pd.Series(pi_pos).ffill().bfill().values
 
 def neg_ll_markov_homogeneous(params):
-    # params: [p_np, p_pn] = P[neg→pos], P[pos→neg]
+    """Negative binomial LL of the homogeneous Markov baseline (constant ``P``).
+
+    ``params = [P_{neg→pos}, P_{pos→neg}]``.
+    """
     p_np, p_pn = params
     if not (0 < p_np < 1 and 0 < p_pn < 1):
         return 1e12
@@ -258,9 +284,15 @@ print(f"  Binomial LL = {ll_hom:.2f}  (2 params)")
 # Fit P(neg) and P(pos) — two 2×2 matrices, 4 free params total.
 
 def regime_of(pi_val):
-    return 0 if pi_val <= 0.5 else 1   # 0 = neg-majority, 1 = pos-majority
+    """Return the dominant-regime index for ``π_pos``: ``0`` = neg-majority, ``1`` = pos-majority."""
+    return 0 if pi_val <= 0.5 else 1
 
 def neg_ll_markov_statedep(params):
+    """Negative binomial LL of the state-dependent (regime-switching) Markov model.
+
+    ``params = [P_np_neg, P_pn_neg, P_np_pos, P_pn_pos]`` — separate transition
+    probabilities for the neg-majority and pos-majority regimes.
+    """
     p_np_n, p_pn_n, p_np_p, p_pn_p = params
     if not all(0 < v < 1 for v in params):
         return 1e12
@@ -311,16 +343,21 @@ print(f"  Binomial LL = {ll_sd:.2f}  (4 params)")
 # P_{pos→neg}(t) = σ(b0 + b1·π_pos(t-1))
 
 def mean_field_P(params, pi_prev_pos):
+    """Build the mean-field 2×2 ``P`` whose transition probs depend on previous-day ``π_pos``.
+
+    ``P_{neg→pos} = σ(a0 + a1·π_pos)``, ``P_{pos→neg} = σ(b0 + b1·π_pos)``.
+    """
     a0, a1, b0, b1 = params
     p_np = sigmoid(a0 + a1 * pi_prev_pos)
     p_pn = sigmoid(b0 + b1 * pi_prev_pos)
     return np.array([[1 - p_np, p_np], [p_pn, 1 - p_pn]])
 
 def neg_ll_markov_meanfield(params):
+    """Negative binomial LL of the mean-field Markov model (state-dependent ``P_t``)."""
     P_stack = np.empty((T, 2, 2))
     for t in range(T):
         if t == 0:
-            P_stack[t] = np.eye(2)  # unused
+            P_stack[t] = np.eye(2)
             continue
         P_stack[t] = mean_field_P(params, pi_pos_ff[t-1])
     q_t = q_markov(P_stack, pi_pos_ff)
@@ -399,6 +436,7 @@ print(f"  Mean-field vs Homog: LR = {lr_hom_mf:.2f}  df=2  p = {p_hom_mf:.4e}")
 # ═══════════════════════════════════════════════════════════════════════════════
 rng = np.random.default_rng(42)
 def simulate_hawkes_mv(params, T_sim):
+    """Forward-simulate ``T_sim`` days of the bivariate AR-1 Hawkes process for sanity checks."""
     mu_n_, mu_p_, n_nn_, n_np_, n_pn_, n_pp_ = params
     N_n = np.zeros(T_sim); N_p = np.zeros(T_sim)
     N_n[0] = rng.poisson(mu_n_)
@@ -413,6 +451,7 @@ def simulate_hawkes_mv(params, T_sim):
 true_params = [3.0, 5.0, 0.1, 0.2, 0.15, 0.35]
 N_n_sim, N_p_sim = simulate_hawkes_mv(true_params, 500)
 def neg_ll_sim(params):
+    """Negative joint Poisson LL of the bivariate Hawkes against simulated ``(N_n_sim, N_p_sim)``."""
     mu_n_, mu_p_, n_nn_, n_np_, n_pn_, n_pp_ = params
     if mu_n_ <= 0 or mu_p_ <= 0: return 1e12
     if any(v < 0 for v in [n_nn_, n_np_, n_pn_, n_pp_]): return 1e12
@@ -473,6 +512,7 @@ plt.close(); print("Saved fig1")
 # ── Fig 2: observed proportion trajectory ────────────────────────────────────
 # With 95% Wilson binomial confidence interval
 def wilson_ci(k, n, z=1.96):
+    """Wilson-score binomial confidence interval (default 95%) for ``k``/``n``."""
     with np.errstate(invalid="ignore", divide="ignore"):
         p = k / np.maximum(n, 1)
         denom = 1 + z**2 / np.maximum(n, 1)
@@ -621,6 +661,7 @@ plt.close(); print("Saved fig7")
 
 # ── Fig 8: binomial deviance residuals per day ───────────────────────────────
 def binom_deviance(k, n, p):
+    """Signed binomial deviance residual per day; ``Σd²`` ≈ scaled goodness-of-fit."""
     k = np.asarray(k, dtype=float); n = np.asarray(n, dtype=float)
     p = np.clip(np.asarray(p, dtype=float), 1e-10, 1 - 1e-10)
     with np.errstate(divide="ignore", invalid="ignore"):
