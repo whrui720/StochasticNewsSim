@@ -438,9 +438,7 @@ $\hat\mu\approx 11.50$, $\hat n\approx 0.614$.}
 \end{figure}
 
 \paragraph{Model comparison.} Table~\ref{tab:partA-models} compares all
-five models on AIC, BIC, log-likelihood, and Pearson dispersion (the
-sample variance of the standardized residuals
-$(N(t)-\lambda(t))/\sqrt{\lambda(t)}$, ideal value $1$).
+five models on AIC, BIC, and log-likelihood.
 
 \begin{table}[H]
 \centering
@@ -449,13 +447,13 @@ $(N(t)-\lambda(t))/\sqrt{\lambda(t)}$, ideal value $1$).
 \label{tab:partA-models}
 \begin{tabular}{lrrrrr}
 \toprule
-Model & \# Params & Log-Lik. & AIC & BIC & Pearson Var \\
+Model & \# Params & Log-Lik. & AIC & BIC \\
 \midrule
-Standard Poisson         & $1$ & $-3835.11$ & $7672.22$ & $7674.73$ & $196.26$ \\
-Inhomogeneous Poisson    & $3$ & $-513.15$  & $1032.29$ & $1039.82$ & $8.52$   \\
-Hawkes (AR-1 limit)      & $2$ & $-2003.81$ & $4011.62$ & $4016.65$ & $225.10$ \\
-Hybrid IHP+Hawkes (AR-1) & $4$ & $-388.79$  & $785.59$  & $795.63$  & $5.10$   \\
-\textbf{Hybrid IHP+Hawkes (full)} & $\mathbf{5}$ & $\mathbf{-371.40}$ & $\mathbf{752.80}$ & $\mathbf{765.35}$ & $\mathbf{4.48}$ \\
+Standard Poisson         & $1$ & $-3835.11$ & $7672.22$ & $7674.73$ \\
+Inhomogeneous Poisson    & $3$ & $-513.15$  & $1032.29$ & $1039.82$   \\
+Hawkes (AR-1 limit)      & $2$ & $-2003.81$ & $4011.62$ & $4016.65$ \\
+Hybrid IHP+Hawkes (AR-1) & $4$ & $-388.79$  & $785.59$  & $795.63$   \\
+\textbf{Hybrid IHP+Hawkes (full)} & $\mathbf{5}$ & $\mathbf{-371.40}$ & $\mathbf{752.80}$ & $\mathbf{765.35}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -539,16 +537,6 @@ counts (Las Vegas 2017).}
 models. The hybrid family dominates by a wide margin.}
 \label{fig:partA-criteria}
 \end{figure}
-
-\paragraph{Known limitation: weekly seasonality.}
-Pearson residuals exhibit strong weekly periodicity: lag-1 autocorrelation
-$\rho_1=0.59$, lag-7 $\rho_7=0.61$, lag-14 $\rho_{14}=0.39$. Day-of-week
-mean Pearson residuals run Wed $+2.07$, Thu $+1.26$, Fri $+0.42$,
-Mon $-0.05$, Tue $-0.11$, Sun $-1.63$, Sat $-1.94$. An exploratory fit
-adding six multiplicative day-of-week factors buys
-$\Delta\mathrm{AIC}\approx -148$ on top of Hybrid-full
-(weekly-augmented Hybrid-full reaches AIC $604.68$); we report this as a
-diagnostic rather than the headline model.
 
 \subsection{Part B on Las Vegas 2017: reliability split}
 \label{sec:results-partB-LV}
@@ -750,13 +738,13 @@ sharp day-0 shock.}
 \label{tab:harvey-partA}
 \begin{tabular}{lrrrrr}
 \toprule
-Model & \# Params & Log-Lik. & AIC & BIC & Pearson Var \\
+Model & \# Params & Log-Lik. & AIC & BIC \\
 \midrule
-Standard Poisson         & $1$ & $-5343.00$ & $10688.00$ & $10691.02$ & $238.63$ \\
-Inhomogeneous Poisson    & $3$ & $-4539.47$ & $9084.94$  & $9094.00$  & $124.11$ \\
-\textbf{Hawkes (AR-1 limit)} & $\mathbf{2}$ & $\mathbf{-905.20}$  & $\mathbf{1814.41}$  & $\mathbf{1820.44}$ & $\mathbf{16.67}$ \\
-Hybrid IHP+Hawkes (AR-1) & $4$ & $-904.56$  & $1817.13$  & $1829.20$  & $16.80$ \\
-Hybrid IHP+Hawkes (full) & $5$ & $-904.56$  & $1819.13$  & $1834.21$  & $16.80$ \\
+Standard Poisson         & $1$ & $-5343.00$ & $10688.00$ & $10691.02$ \\
+Inhomogeneous Poisson    & $3$ & $-4539.47$ & $9084.94$  & $9094.00$  \\
+\textbf{Hawkes (AR-1 limit)} & $\mathbf{2}$ & $\mathbf{-905.20}$  & $\mathbf{1814.41}$  & $\mathbf{1820.44}$ \\
+Hybrid IHP+Hawkes (AR-1) & $4$ & $-904.56$  & $1817.13$  & $1829.20$  \\
+Hybrid IHP+Hawkes (full) & $5$ & $-904.56$  & $1819.13$  & $1834.21$  \\
 \bottomrule
 \end{tabular}
 \end{table}
