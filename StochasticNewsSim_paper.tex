@@ -56,7 +56,7 @@ but produces different results due to Hurricane Harvey's gradual endogenous buil
 \section{Introduction}
 % =================================================================
 
-A single high-impact event seeds a cascade of news coverage. Two observable
+A single high-impact event causes a cascade of news articles. Two observable
 quantities of that cascade are simultaneously stochastic: \emph{how much} is
 published on each day after the event ($N(t)$) and \emph{how reliable} that
 coverage is ($\pipos(t)$, the fraction of articles published by reliable
@@ -75,17 +75,17 @@ and that doing so is feasible with public data.
 \paragraph{Running example.} The 2017 Las Vegas shooting is our primary case
 study. The event has a singular, exogenous, well-defined origin (no prior
 coverage ramp-up), a sharp day-0 spike (489 articles), and a long, decaying
-tail (91 days), giving the candidate models something to fit and something to
-get wrong. Reliable and unreliable outlets both engaged with the story so the
-reliability composition is non-degenerate. Hurricane Harvey 2017 serves as a
+tail (91 days). Reliable and unreliable outlets both engaged with the story so the
+reliability composition is non-trivial. However, it should be noted that the there
+are a majority of reliable outlets (63.5\%), which could result in some model biases. Hurricane Harvey 2017 serves as a
 secondary cross-event replication.
 
 \paragraph{Prior work.} Three threads in the literature are relevant.
 
 \emph{Point-process models of online attention.} Crane and Sornette
 \cite{CraneSornette2008} used Hawkes-type response functions to separate
-endogenous from exogenous bursts in YouTube views; this is the conceptual
-ancestor of our Part-A hybrid. Zhao et al.\ (SEISMIC, \cite{Zhao2015SEISMIC})
+endogenous from exogenous bursts in YouTube views, which is conceptually
+similar to our Part-A hybrid. Zhao et al.\ (SEISMIC, \cite{Zhao2015SEISMIC})
 and Mishra, Rizoiu, and Xie \cite{MishraRizoiuXie2016} extended self-exciting
 processes to tweet/retweet cascades. Daley and Vere-Jones
 \cite{DaleyVereJones2003} provide the canonical reference for inhomogeneous
