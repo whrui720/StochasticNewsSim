@@ -917,9 +917,10 @@ forecast days $61$--$90$). Promising model extensions include:
   \item \emph{Continuous reliability scores.} Drop the median threshold and
         model the raw NewsGuard score as a real-valued mark on each event,
         recovering within-class heterogeneity that the binary label hides.
-  \item \emph{Cross-event replication beyond Harvey.} Run the same fitting
-        pipeline on Nice 2016, Syrian civil war, and Zika 2016, all of which
-        already have prepared configs.
+  \item \emph{Cross-event replication beyond Harvey.} Running the same fitting
+        pipeline on other notable events within the CC News dataset 
+        (Nice 2016, Syrian civil war, Zika 2016, etc.), could expose further patterns/be used
+        as a potential classification tool for species of article lifetimes.
   \item \emph{Joint count + split + weekly model.} Combine the multivariate
         Hawkes count layer with the regime-switching Markov split layer and
         add day-of-week multipliers (which the Las Vegas Part-A diagnostic
