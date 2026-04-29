@@ -38,19 +38,18 @@ shooting as a primary case study (CC-News + NewsGuard, 91 days, 2{,}702
 articles), we fit and compare five counting-process models for $N(t)$ and four
 distributional models for $\pipos(t)$ on a common likelihood scale. For
 counts, a hybrid Inhomogeneous-Poisson plus Hawkes model wins decisively
-($\Delta\mathrm{AIC}=-279.5$ vs.\ pure IHP), separating an exogenous trigger
-from endogenous amplification at distinct timescales. A profile-likelihood
+on AIC, BIC, and log-likelihood, as the IHP accounts for the initial exogenous shock,
+while the Hawkes accounts for the subsequent self-excitation. A profile-likelihood
 sweep of the Hawkes decay rate collapses the optimal Hawkes kernel to an
 AR(1) one-step lag $\lambda(t)=\mu+n N(t-1)$. This Markovian structure on the
 counts directly motivates the Part-B reliability models: we treat the
 reliability label as a first-order Markov chain on a binary state space and
 test homogeneous, regime-switching, and mean-field parameterizations against a
-bivariate Hawkes baseline on a shared conditional binomial likelihood. The
-state-dependent (regime-switching) Markov model is the AIC winner ($322.65$),
-revealing a mean-reverting reliability ecology around $\pipos\approx 0.63$. A
-brief replication on Hurricane Harvey 2017 shows the same methodology applies
-but produces a different ranking, consistent with the qualitatively different
-exogenous-shock profile of that event.
+bivariate Hawkes baseline model using a shared conditional binomial likelihood.
+The results show that the bivariate Hawkes model and the non-homogeneous Markov models 
+are nearly indistinguishable on fit, as they exhaust the signal and start fitting to the noise. A
+brief replication on the 2017 Hurricane Harvey data shows that the same methodology applies
+but produces different results due to Hurricane Harvey's gradual endogenous build-up.
 \end{abstract}
 
 % =================================================================
