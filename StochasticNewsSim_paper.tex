@@ -15,7 +15,7 @@
 \usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit,backgrounds}
 
 \title{Stochastics of News Article Propagation: \\
-       Joint Modelling of Counts and Reliability Composition \\
+       Joint Modeling of Counts and Reliability Composition \\
        in Event-Driven News Cascades}
 \author{Harry Wang \and Sriyan Madugula \and Ruthesh Thavamani}
 \date{MATH 460 --- Stochastic Processes}
@@ -44,7 +44,7 @@ sweep of the Hawkes decay rate collapses the optimal Hawkes kernel to an
 AR(1) one-step lag $\lambda(t)=\mu+n N(t-1)$. This Markovian structure on the
 counts directly motivates the Part-B reliability models: we treat the
 reliability label as a first-order Markov chain on a binary state space and
-test homogeneous, regime-switching, and mean-field parameterisations against a
+test homogeneous, regime-switching, and mean-field parameterizations against a
 bivariate Hawkes baseline on a shared conditional binomial likelihood. The
 state-dependent (regime-switching) Markov model is the AIC winner ($322.65$),
 revealing a mean-reverting reliability ecology around $\pipos\approx 0.63$. A
@@ -119,7 +119,7 @@ the \emph{same} statistical scoring. Concretely, this paper contributes:
         scale, despite having native likelihoods of different types.
   \item An empirical bridge from Part A to Part B: the Hawkes profile
         likelihood collapses to an AR(1) limit, motivating Markov-chain
-        modelling of the reliability state. This narrative thread is the
+        modeling of the reliability state. This narrative thread is the
         backbone of \S\ref{sec:bridge}.
 \end{enumerate}
 
@@ -152,7 +152,7 @@ binomial likelihood).
 
 We fit three baseline counting-process models and a four-parameter / five-parameter
 hybrid. All five models are scored on the same conditional Poisson
-log-likelihood including the $\log N!$ normalisation,
+log-likelihood including the $\log N!$ normalization,
 \begin{equation}
   \ell = \sum_{t=0}^{T-1}\Bigl[N(t)\log\lambda(t) - \lambda(t) - \log N(t)!\Bigr],
   \label{eq:poisson-LL}
@@ -168,7 +168,7 @@ $\lambda(t)=A\,e^{-\beta t}+c$ with $A\!\geq\!0$ the initial amplitude above
 baseline, $\beta\!>\!0$ the exponential decay rate, and $c\!\geq\!0$ the
 long-run baseline. Each day's count is an independent Poisson draw whose rate
 decays deterministically with absolute calendar time: this captures the
-``news-cycle decay'' phenomenon. Optimised by Nelder--Mead with multi-start.
+``news-cycle decay'' phenomenon. Optimized by Nelder--Mead with multi-start.
 
 \paragraph{Discrete-time Hawkes (2 parameters in the AR-1 limit, 3 in general).}
 We use the recursive form
@@ -177,7 +177,7 @@ We use the recursive form
   \quad R(0)=0,
   \label{eq:hawkes}
 \end{equation}
-with the stationary reparameterisation
+with the stationary reparameterization
 \begin{equation}
   n=\frac{\alpha}{e^{\beta}-1}\in(0,1),
 \end{equation}
@@ -202,8 +202,8 @@ and pure Hawkes-AR1 (drop the IHP term and rename $c\!\to\!\mu$); Hybrid-full
 strictly nests Hybrid-AR1. These nestings enable likelihood-ratio tests in
 addition to AIC/BIC.
 
-\paragraph{Optimisation.} All models are fit with Nelder--Mead from a
-multi-start grid of initialisations to dodge local minima. Stationarity of
+\paragraph{Optimization.} All models are fit with Nelder--Mead from a
+multi-start grid of initializations to dodge local minima. Stationarity of
 the Hawkes process is checked at the fitted value; for the multivariate
 Hawkes of \S\ref{sec:partB-models} stationarity is enforced as a
 spectral-radius constraint on the branching matrix.
@@ -213,7 +213,7 @@ spectral-radius constraint on the branching matrix.
 
 A diagnostic on the Part-A Hawkes that profoundly shapes Part B is the
 \emph{profile log-likelihood of the kernel decay} $\beta$. Fixing $\beta$ on
-a log-grid from $0.05$ to $32$ and re-optimising $(\mu,n)$, the profile
+a log-grid from $0.05$ to $32$ and re-optimizing $(\mu,n)$, the profile
 log-likelihood is monotone increasing in $\beta$ and plateaus for
 $\beta\geq 10$ (Table~\ref{tab:beta-profile}). In the limit
 $\beta\to\infty$ the exponential kernel $e^{-\beta\Delta}$ collapses to a
@@ -227,13 +227,13 @@ process: the next-day rate depends only on yesterday's count, which is
 exactly the conditional independence structure of a first-order Markov chain.
 
 This empirical AR(1) collapse motivates the Part-B model family.
-For the binary reliability state, the natural generalisation of
+For the binary reliability state, the natural generalization of
 \eqref{eq:ar1} is a first-order Markov chain on the state space
-$\{\mathrm{neg},\mathrm{pos}\}$, parameterised by a $2{\times}2$ transition
+$\{\mathrm{neg},\mathrm{pos}\}$, parameterized by a $2{\times}2$ transition
 matrix $P$ that may be \emph{homogeneous} (a single $P$), \emph{regime-switching}
 (two $P^{(\cdot)}$ matrices indexed by yesterday's majority state), or
 \emph{mean-field} (the entries of $P_t$ depend smoothly on yesterday's
-empirical proportion $\pipos(t-1)$). This thread is summarised in
+empirical proportion $\pipos(t-1)$). This thread is summarized in
 Figure~\ref{fig:ar1-bridge}.
 
 \begin{figure}[H]
@@ -330,16 +330,16 @@ constant in $q_t$ and so cancels in every $\Delta\mathrm{AIC}$ and LRT.
 Each category gets its own baseline $\mu_k$ and its own row of the
 $2{\times}2$ branching matrix $n=(n_{kj})$, so cross-excitation is
 first-class. Stationarity ($\rho(n)<1$) is enforced as a constraint during
-optimisation. The implied split is
+optimization. The implied split is
 $q_t=\lampos(t)/(\lampos(t)+\lamneg(t))$, the direct consequence of the
 superposition identity \eqref{eq:cond-binomial}.
 
-\paragraph{Model 2z: Homogeneous Markov (null, 2 parameters).}
+\paragraph{Model 2a: Homogeneous Markov (null, 2 parameters).}
 A single $2{\times}2$ transition matrix $P$ with rows summing to one
 (only two free parameters, one per row). The predicted split is
 $q_t=(\pi_{t-1}\,P)_{\mathrm{pos}}$.
 
-\paragraph{Model 2a: State-dependent Markov (4 parameters).}
+\paragraph{Model 2b: State-dependent Markov (4 parameters).}
 Two transition matrices $P^{(\mathrm{neg})}$ and $P^{(\mathrm{pos})}$,
 indexed by yesterday's majority class
 $x_{t-1}=\arg\max_k\pi_k(t-1)\in\{\mathrm{neg},\mathrm{pos}\}$:
@@ -349,7 +349,7 @@ $x_{t-1}=\arg\max_k\pi_k(t-1)\in\{\mathrm{neg},\mathrm{pos}\}$:
 This lets the rare neg-majority shock regime have qualitatively different
 dynamics from the typical pos-majority equilibrium regime.
 
-\paragraph{Model 2b: Mean-field Markov (4 parameters).}
+\paragraph{Model 2c: Mean-field Markov (4 parameters).}
 The transition probabilities depend smoothly on yesterday's empirical
 proportion through logistic links,
 \begin{align}
@@ -358,16 +358,16 @@ proportion through logistic links,
   P_{\mathrm{pos}\to\mathrm{neg}}(t) &= \sigma\bigl(b_0 + b_1\,\pipos(t-1)\bigr),
 \end{align}
 with the other two entries of $P_t$ fixed by the row-sum constraint. At
-$a_1=b_1=0$ this exactly nests Model 2z, giving a clean LRT with
+$a_1=b_1=0$ this exactly nests Model 2a, giving a clean LRT with
 $\mathrm{df}=2$.
 
-\paragraph{Optimisation and validation.} Optimisation is again Nelder--Mead
+\paragraph{Optimization and validation.} Optimization is again Nelder--Mead
 with multi-start. We perform a synthetic recovery sanity-check for the
 multivariate Hawkes ($T=500$, parameters
 $\mu_{\mathrm{neg}}=3.0$, $\mu_{\mathrm{pos}}=5.0$ and a $2{\times}2$
 branching matrix); the multi-start fit recovers all six parameters with a
 maximum relative error of $20.3\%$, which we deemed acceptable for downstream
-inference. The single-start version of the optimiser failed badly on the
+inference. The single-start version of the optimizer failed badly on the
 same synthetic data (max relative error $1.48$), confirming the value of the
 multi-start.
 
@@ -398,13 +398,13 @@ is monotone increasing in $\beta$ and stable to four decimal places for
 $\beta\geq 10$. The plateau value
 $(\hat\mu,\hat n)=(11.50, 0.6137)$ defines the AR(1) Hawkes we report as
 Model C in Table~\ref{tab:partA-models}. Figure~\ref{fig:partA-beta-profile}
-visualises the sweep.
+visualizes the sweep.
 
 \begin{table}[H]
 \centering
 \caption{Profile log-likelihood of the discrete-time Hawkes model on Las
 Vegas 2017 over a log-grid in the kernel decay $\beta$.
-Re-optimisation of $(\mu,n)$ at each fixed $\beta$. The profile is
+Re-optimization of $(\mu,n)$ at each fixed $\beta$. The profile is
 monotone in $\beta$ and plateaus at $\beta\geq 10$, where the kernel
 collapses to a one-step lag.}
 \label{tab:beta-profile}
@@ -439,7 +439,7 @@ $\hat\mu\approx 11.50$, $\hat n\approx 0.614$.}
 
 \paragraph{Model comparison.} Table~\ref{tab:partA-models} compares all
 five models on AIC, BIC, log-likelihood, and Pearson dispersion (the
-sample variance of the standardised residuals
+sample variance of the standardized residuals
 $(N(t)-\lambda(t))/\sqrt{\lambda(t)}$, ideal value $1$).
 
 \begin{table}[H]
@@ -500,7 +500,7 @@ Hybrid (full)          & $539.8$ & $-6.49$    \\
 \end{tabular}
 \end{center}
 Hybrid-AR1 lands $\lambda(0)$ \emph{exactly} on the observed $489$ articles
-(the optimiser drives $A+c$ onto the data), then hands propagation off to a
+(the optimizer drives $A+c$ onto the data), then hands propagation off to a
 self-excitation term with branching ratio $\hat n=0.7248$.
 
 \paragraph{Two timescales in Hybrid-full.}
@@ -510,7 +510,7 @@ decline, and a Hawkes-kernel half-life of
 $\ln 2 / 0.0848 \approx 8.2$ days for the slower self-sustaining tail.
 Figure~\ref{fig:partA-hybrid-decomp} stacks the two components on top of
 each other; Figure~\ref{fig:partA-overlay} overlays all five models against
-the observed counts; Figure~\ref{fig:partA-criteria} summarises the AIC/BIC
+the observed counts; Figure~\ref{fig:partA-criteria} summarizes the AIC/BIC
 ranking.
 
 \begin{figure}[H]
@@ -581,6 +581,22 @@ Multivariate Hawkes beats the homogeneous baseline on raw log-likelihood
 (by $5.82$) but pays $+8$ in AIC for its $4$ extra parameters and so loses
 on AIC.
 
+\paragraph{Three near-tied non-null models, one decisively beaten null.}
+The headline of Table~\ref{tab:partB-models} is not a clean ranking but
+rather two groupings. On raw log-likelihood the three non-trivial models
+(Hawkes, state-dependent Markov, mean-field Markov) span only
+$\approx 0.6$ nats ($-156.93$ to $-157.56$); pairwise they are essentially
+indistinguishable on \emph{fit quality}. All three are $\approx\!5\text{--}6$
+nats better than the homogeneous Markov null --- a uniformly large gap that
+the LRTs in Table~\ref{tab:partB-LRT} formalize for the two nested Markov
+variants. AIC then breaks the within-group tie not by improved fit but by
+\emph{parameter accounting}: state-dependent and mean-field Markov each
+carry $4$ parameters, while multivariate Hawkes carries $6$, so Hawkes pays
+a $+4$ AIC penalty for an $\approx 0.4$-nat LL improvement and ends up
+behind. The reading we recommend is therefore not ``Markov beats Hawkes''
+but ``the three non-null models tie on fit; AIC selects the most
+parameter-efficient parameterization among them''.
+
 \begin{table}[H]
 \centering
 \caption{Likelihood-ratio tests vs.\ the homogeneous Markov null on
@@ -620,7 +636,7 @@ about $n_{\mathrm{pos},\mathrm{neg}}=0.32$ reliable articles tomorrow on
 average (likely fact-checks, debunks, follow-ups), while a reliable article
 triggers about $n_{\mathrm{neg},\mathrm{pos}}=0.16$ unreliable articles
 tomorrow --- half as much in the reverse direction.
-Figure~\ref{fig:partB-branching} visualises the branching matrix as a
+Figure~\ref{fig:partB-branching} visualizes the branching matrix as a
 heatmap.
 
 \begin{figure}[H]
@@ -680,7 +696,7 @@ when pos is absent); at $\pipos(t-1)=1$ it gives
 $P_{\mathrm{neg}\to\mathrm{pos}}=\sigma(-2.81)=0.06$ (almost no flips when
 pos already dominates). The decreasing logistic shape of
 $P_{\mathrm{neg}\to\mathrm{pos}}$ as a function of yesterday's $\pipos$ is
-the smooth analogue of the regime-switching mean reversion observed in 2a.
+the smooth analogue of the regime-switching mean reversion observed in 2b.
 Figure~\ref{fig:partB-meanfield} plots the fitted curves and trajectory.
 
 \begin{figure}[H]
@@ -721,13 +737,13 @@ common binomial scale).}
 
 We re-fit the same Part-A and Part-B pipelines on the Hurricane Harvey 2017
 event (CC-News + NewsGuard, same loader configuration, single keyword TOML
-swap). Headline numbers are summarised in
+swap). Headline numbers are summarized in
 Tables~\ref{tab:harvey-partA} and~\ref{tab:harvey-partB}.
 
 \begin{table}[H]
 \centering
 \caption{Part A on Hurricane Harvey 2017. Pure Hawkes-AR1 wins; the hybrid
-provides no improvement because the hybrid optimiser collapses the IHP
+provides no improvement because the hybrid optimizer collapses the IHP
 component (the fitted $A$ is essentially zero), reflecting that Harvey's
 coverage builds endogenously over multiple days rather than through a
 sharp day-0 shock.}
@@ -825,21 +841,31 @@ Two structural conclusions survive the comparison.
         reliable dominance.
 \end{enumerate}
 
-\paragraph{Why Markov beats Hawkes on the split.}
-On the binomial-conditional scale, Markov beats Hawkes despite using fewer
-parameters because:
+\paragraph{Hawkes and the Markov variants are essentially tied on fit; AIC selects by parameter count.}
+On the binomial-conditional scale, all three non-null models are within
+$\approx 0.6$ nats of each other on raw log-likelihood and sit
+$\approx 5\text{--}6$ nats above the homogeneous Markov null
+(\S\ref{sec:results-partB-LV}). The AIC verdict that places
+state-dependent and mean-field Markov ahead of multivariate Hawkes is
+therefore driven not by a meaningful gap in fit quality but by parameter
+accounting: Hawkes pays a $+4$ AIC penalty for its $6$ parameters vs.\
+the Markov variants' $4$, and that penalty exceeds the
+$\approx 0.4$-nat LL gain Hawkes provides. Two structural reasons explain
+why Hawkes does not earn its extra parameters back on this objective:
 (i) Hawkes spends parameter capacity on predicting the \emph{total} count,
 which is conditioned out by \eqref{eq:cond-binomial};
 (ii) $\approx\!86\%$ of Las Vegas days are pos-majority
-($74$ of $86$ non-empty days), so a single homogeneous $P$ already captures
-the dominant regime, and the regime-specific tweak in 2a adds value
-\emph{exactly} on the days where it is needed --- the initial neg-majority
-shock window.
+($74$ of $86$ non-empty days), so a single homogeneous $P$ already
+captures the dominant regime, and the regime-specific tweak in 2b adds
+value \emph{exactly} on the days where it is needed --- the initial
+neg-majority shock window. The honest reading is therefore ``Markov ties
+Hawkes on fit and wins on AIC via fewer parameters'', not ``Markov
+strictly outperforms Hawkes''.
 
 \paragraph{Two model choices answer two different questions.}
-The Markov family parameterises the conditional distribution we score on,
+The Markov family parameterizes the conditional distribution we score on,
 and so wins the AIC competition for forecasting tomorrow's reliability mix.
-The multivariate Hawkes parameterises cross-excitation between the two
+The multivariate Hawkes parameterizes cross-excitation between the two
 streams, and so wins on \emph{interpretation} questions of the form ``what
 kind of article triggers what kind of article tomorrow?''. The branching
 matrix entries $n_{\mathrm{pos},\mathrm{neg}}=0.32$ and
@@ -897,7 +923,7 @@ forecast days $61$--$90$). Promising model extensions include:
   \item \emph{McKean--Vlasov / distribution-dependent SDE.} Replace the
         discrete-time Markov chain on $\pipos(t)$ with a continuous-time SDE
         whose drift depends on the empirical measure of $\pipos$. This
-        generalises the mean-field Markov to a true distribution-dependent
+        generalizes the mean-field Markov to a true distribution-dependent
         process and would let us derive analytic expressions for first-passage
         times, equilibrium distributions, and rare-event probabilities.
   \item \emph{Continuous reliability scores.} Drop the median threshold and
@@ -910,7 +936,7 @@ forecast days $61$--$90$). Promising model extensions include:
         Hawkes count layer with the regime-switching Markov split layer and
         add day-of-week multipliers (which the Las Vegas Part-A diagnostic
         suggests are worth $\Delta\mathrm{AIC}\approx -148$). The likelihood
-        for such a joint model factorises into a count piece and a binomial
+        for such a joint model factorizes into a count piece and a binomial
         piece, both of which we already know how to fit.
 \end{itemize}
 
