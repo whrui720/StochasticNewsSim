@@ -35,7 +35,7 @@ We study the news cascade triggered by a single high-impact event as a pair of
 coupled stochastic processes: the daily article count $N(t)$ and the
 reliable-vs-unreliable composition $\pipos(t)$. Using the 2017 Las Vegas
 shooting as a primary case study (CC-News + NewsGuard, 91 days, 2{,}702
-articles), we fit and compare five counting-process models for $N(t)$ and four
+articles), we fit and compare four counting-process models for $N(t)$ and four
 distributional models for $\pipos(t)$ on a common likelihood scale. For
 counts, a hybrid Inhomogeneous-Poisson plus Hawkes model wins decisively
 on AIC, BIC, and log-likelihood, as the IHP accounts for the initial exogenous shock,
@@ -154,8 +154,8 @@ binomial likelihood).
 \subsection{Part A: counting-process models for $N(t)$}
 \label{sec:partA-models}
 
-We fit three baseline counting-process models and a four-parameter / five-parameter
-hybrid. All five models are scored on the same conditional Poisson
+We fit three baseline counting-process models and a four-parameter
+hybrid. All four models are scored on the same conditional Poisson
 log-likelihood including the $\log N!$ normalization,
 \begin{equation}
   \ell = \sum_{t=0}^{T-1}\Bigl[N(t)\log\lambda(t) - \lambda(t) - \log N(t)!\Bigr],
@@ -189,22 +189,19 @@ where $n$ is the \emph{branching ratio} (the expected number of secondary
 articles triggered per article). $\lambda(t)$ is conditional on the past
 counts $N(0),\dots,N(t-1)$, so the log-likelihood
 \eqref{eq:poisson-LL} must be evaluated recursively rather than with a
-naive plug-in MLE on binned counts.
+close-form MLE on independent Poisson counts.
 
-\paragraph{Hybrid IHP\,+\,Hawkes (4 or 5 parameters).}
-The hybrid combines exogenous decay with endogenous self-excitation,
+\paragraph{Hybrid IHP\,+\,Hawkes (AR-1, 4 parameters).}
+The hybrid combines exogenous decay with endogenous self-excitation:
 \begin{equation}
-  \lambda(t)=A\,e^{-\beta_0 t}+c+\alpha\,R(t),
-  \qquad R(t)=e^{-\beta_1}\bigl[R(t-1)+N(t-1)\bigr].
-  \label{eq:hybrid-full}
+  \lambda(0)=A+c,\qquad
+  \lambda(t)=A\,e^{-\beta_0 t}+c+n\,N(t-1),\quad t\ge 1.
 \end{equation}
-At $t=0$, $R(0)=0$ so $\lambda(0)=A+c$, which lets the hybrid still absorb a
-day-0 exogenous shock. Two variants are fit: the AR-1 limit
-($\beta_1\to\infty$, replacing $\alpha R(t)$ by $n N(t-1)$, 4 params) and the
-full kernel (5 params). Hybrid-AR1 strictly nests both pure IHP (set $n=0$)
-and pure Hawkes-AR1 (drop the IHP term and rename $c\!\to\!\mu$); Hybrid-full
-strictly nests Hybrid-AR1. These nestings enable likelihood-ratio tests in
-addition to AIC/BIC.
+The $A\,e^{-\beta_0 t}+c$ term captures exogenous news-cycle decay, while the
+$n\,N(t-1)$ term captures endogenous next-day amplification. Hybrid-AR1
+strictly nests both pure IHP (set $n=0$) and pure Hawkes-AR1 (drop the IHP
+term and rename $c\!\to\!\mu$), enabling likelihood-ratio tests in addition to
+AIC/BIC.
 
 \paragraph{Optimization.} All models are fit with Nelder--Mead from a
 multi-start grid of initializations to dodge local minima. Stationarity of
@@ -442,7 +439,7 @@ $\hat\mu\approx 11.50$, $\hat n\approx 0.614$.}
 \end{figure}
 
 \paragraph{Model comparison.} Table~\ref{tab:partA-models} compares all
-five models on AIC, BIC, and log-likelihood.
+four models on AIC, BIC, and log-likelihood.
 
 \begin{table}[H]
 \centering
@@ -456,8 +453,7 @@ Model & \# Params & Log-Lik. & AIC & BIC \\
 Standard Poisson         & $1$ & $-3835.11$ & $7672.22$ & $7674.73$ \\
 Inhomogeneous Poisson    & $3$ & $-513.15$  & $1032.29$ & $1039.82$   \\
 Hawkes (AR-1 limit)      & $2$ & $-2003.81$ & $4011.62$ & $4016.65$ \\
-Hybrid IHP+Hawkes (AR-1) & $4$ & $-388.79$  & $785.59$  & $795.63$   \\
-\textbf{Hybrid IHP+Hawkes (full)} & $\mathbf{5}$ & $\mathbf{-371.40}$ & $\mathbf{752.80}$ & $\mathbf{765.35}$ \\
+\textbf{Hybrid IHP+Hawkes (AR-1)} & $\mathbf{4}$ & $\mathbf{-388.79}$  & $\mathbf{785.59}$  & $\mathbf{795.63}$   \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -477,7 +473,6 @@ Comparison & LR statistic & df & $p$-value \\
 SP vs.\ IHP                  & $6{,}643.9$ & $2$ & $<10^{-300}$ \\
 SP vs.\ Hawkes               & $3{,}662.6$ & $1$ & $<10^{-300}$ \\
 IHP vs.\ Hybrid-AR1          & $248.7$     & $1$ & $\approx 0$  \\
-Hybrid-AR1 vs.\ Hybrid-full  & $34.79$     & $1$ & $3.7\times 10^{-9}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -497,7 +492,6 @@ Model & $\lambda(0)$ & Day-0 log-lik \\
 IHP                    & $450.6$ & $-5.60$    \\
 Hawkes (AR-1)          & $11.5$  & $-1360.13$ \\
 Hybrid (AR-1)          & $489.0$ & $-4.02$    \\
-Hybrid (full)          & $539.8$ & $-6.49$    \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -505,13 +499,14 @@ Hybrid-AR1 lands $\lambda(0)$ \emph{exactly} on the observed $489$ articles
 (the optimizer drives $A+c$ onto the data), then hands propagation off to a
 self-excitation term with branching ratio $\hat n=0.7248$.
 
-\paragraph{Two timescales in Hybrid-full.}
-The full hybrid separates the cascade into two distinct decay timescales: an
-IHP half-life of $\ln 2 / 0.397 \approx 1.75$ days for the fast initial
-decline, and a Hawkes-kernel half-life of
-$\ln 2 / 0.0848 \approx 8.2$ days for the slower self-sustaining tail.
+\paragraph{Hybrid mechanism decomposition.}
+The AR-1 hybrid separates the cascade into an exogenous IHP component and an
+endogenous self-excitation component. The fitted IHP half-life is
+$\ln 2 / 2.22 \approx 0.31$ days for the sharp initial drop, while the AR-1
+branching ratio ($\hat n=0.7248$) controls the persistence of the endogenous
+tail.
 Figure~\ref{fig:partA-hybrid-decomp} stacks the two components on top of
-each other; Figure~\ref{fig:partA-overlay} overlays all five models against
+each other; Figure~\ref{fig:partA-overlay} overlays all four models against
 the observed counts; Figure~\ref{fig:partA-criteria} summarizes the AIC/BIC
 ranking.
 
@@ -529,7 +524,7 @@ dynamics.}
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\linewidth]{partAresults/las_vegas_2017/fig11_all_models_overlay.png}
-\caption{All five Part-A models overlaid on the observed daily article
+\caption{All four Part-A models overlaid on the observed daily article
 counts (Las Vegas 2017).}
 \label{fig:partA-overlay}
 \end{figure}
@@ -537,7 +532,7 @@ counts (Las Vegas 2017).}
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\linewidth]{partAresults/las_vegas_2017/fig12_all_models_criteria.png}
-\caption{AIC, BIC, and log-likelihood bar charts for all five Part-A
+\caption{AIC, BIC, and log-likelihood bar charts for all four Part-A
 models. The hybrid family dominates by a wide margin.}
 \label{fig:partA-criteria}
 \end{figure}
@@ -748,7 +743,6 @@ Standard Poisson         & $1$ & $-5343.00$ & $10688.00$ & $10691.02$ \\
 Inhomogeneous Poisson    & $3$ & $-4539.47$ & $9084.94$  & $9094.00$  \\
 \textbf{Hawkes (AR-1 limit)} & $\mathbf{2}$ & $\mathbf{-905.20}$  & $\mathbf{1814.41}$  & $\mathbf{1820.44}$ \\
 Hybrid IHP+Hawkes (AR-1) & $4$ & $-904.56$  & $1817.13$  & $1829.20$  \\
-Hybrid IHP+Hawkes (full) & $5$ & $-904.56$  & $1819.13$  & $1834.21$  \\
 \bottomrule
 \end{tabular}
 \end{table}
