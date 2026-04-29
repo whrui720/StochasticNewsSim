@@ -394,7 +394,7 @@ on demand.
 
 \paragraph{Profile sweep and AR(1) collapse.}
 The Hawkes profile-likelihood sweep over $\beta$ (Table~\ref{tab:beta-profile})
-is monotone increasing in $\beta$ and stable to four decimal places for
+is monotonically increasing in $\beta$ and stable to four decimal places for
 $\beta\geq 10$. The plateau value
 $(\hat\mu,\hat n)=(11.50, 0.6137)$ defines the AR(1) Hawkes we report as
 Model C in Table~\ref{tab:partA-models}. Figure~\ref{fig:partA-beta-profile}
@@ -404,9 +404,7 @@ visualizes the sweep.
 \centering
 \caption{Profile log-likelihood of the discrete-time Hawkes model on Las
 Vegas 2017 over a log-grid in the kernel decay $\beta$.
-Re-optimization of $(\mu,n)$ at each fixed $\beta$. The profile is
-monotone in $\beta$ and plateaus at $\beta\geq 10$, where the kernel
-collapses to a one-step lag.}
+Re-optimization of $(\mu,n)$ at each fixed $\beta$.}
 \label{tab:beta-profile}
 \begin{tabular}{rrrr}
 \toprule
@@ -528,13 +526,13 @@ counts (Las Vegas 2017).}
 \label{fig:partA-overlay}
 \end{figure}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{partAresults/las_vegas_2017/fig12_all_models_criteria.png}
-\caption{AIC, BIC, and log-likelihood bar charts for all four Part-A
-models. The hybrid family dominates by a wide margin.}
-\label{fig:partA-criteria}
-\end{figure}
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=0.85\linewidth]{partAresults/las_vegas_2017/fig12_all_models_criteria.png}
+% \caption{AIC, BIC, and log-likelihood bar charts for all four Part-A
+% models. The hybrid family dominates by a wide margin.}
+% \label{fig:partA-criteria}
+% \end{figure}
 
 \subsection{Part B on Las Vegas 2017: reliability split}
 \label{sec:results-partB-LV}
