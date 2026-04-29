@@ -77,8 +77,8 @@ study. The event has a singular, exogenous, well-defined origin (no prior
 coverage ramp-up), a sharp day-0 spike (489 articles), and a long, decaying
 tail (91 days). Reliable and unreliable outlets both engaged with the story so the
 reliability composition is non-trivial. However, it should be noted that the there
-are a majority of reliable outlets (63.5\%), which could result in some model biases. Hurricane Harvey 2017 serves as a
-secondary cross-event replication.
+are a majority of reliable outlets (63.5\%), which could result in some model biases. 
+Hurricane Harvey 2017 serves as asecondary cross-event replication.
 
 \paragraph{Prior work.} Three threads in the literature are relevant.
 
@@ -96,12 +96,14 @@ Poisson and Hawkes processes on point patterns.
 and farther on Twitter than true news, but did not write down a generative
 stochastic model. Allcott and Gentzkow \cite{AllcottGentzkow2017} measured the
 economics of fake news during the 2016 U.S.\ election. Tambuscio et al.\
-\cite{Tambuscio2015} used SIR-style compartmental models for hoax diffusion;
-this is closest in spirit to our Markov-chain work, but in continuous-time
+\cite{Tambuscio2015} used SIR-style compartmental models for hoax diffusion.
+This is closest in spirit to our Markov-chain work, but in the context ofcontinuous-time
 epidemiology rather than discrete-time time-series.
 
 \emph{Reliability scoring infrastructure.} NewsGuard and Media Bias / Fact
-Check provide outlet-level reliability scores. These are typically used as
+Check provide outlet-level reliability scores on a scale from 0 to 100. To convert these 
+scores to a binary label, we threshold at the midpoint so that scores above 50 are considered
+reliable and scores below 50 are considered unreliable. These scores are typically used as
 features for downstream classification, rarely as the response variable in a
 stochastic time-series model. We use NewsGuard explicitly as the response.
 
@@ -113,13 +115,16 @@ the \emph{same} statistical scoring. Concretely, this paper contributes:
   \item A hybrid IHP\,+\,Hawkes model for the count process that decomposes a
         news cascade into an exogenous trigger and endogenous amplification
         operating at two distinct timescales.
-  \item A shared conditional binomial likelihood that puts a multivariate
-        Hawkes process and a family of Markov-chain models on a single AIC/BIC
-        scale, despite having native likelihoods of different types.
   \item An empirical bridge from Part A to Part B: the Hawkes profile
         likelihood collapses to an AR(1) limit, motivating Markov-chain
         modeling of the reliability state. This narrative thread is the
         backbone of \S\ref{sec:bridge}.
+  \item A shared conditional binomial likelihood that puts a multivariate
+        Hawkes process and a family of Markov-chain models on a single AIC/BIC
+        scale, despite having native likelihoods of different types. This allows
+        us to directly compare how these models perform on the same task of predicting 
+        the reliability composition.
+  
 \end{enumerate}
 
 % =================================================================
