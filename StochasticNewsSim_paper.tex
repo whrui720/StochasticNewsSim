@@ -300,10 +300,10 @@ explains the daily \emph{reliable fraction} $\pipos(t)=\Npos(t)/\Ntot(t)$?
 
 \paragraph{Shared conditional binomial likelihood.}
 Hawkes natively scores the pair of counts $(\Nneg(t),\Npos(t))$ under a
-multivariate Poisson log-likelihood; a Markov chain natively scores a
+multivariate Poisson log-likelihood, and a Markov chain natively scores a
 one-step transition under a multinomial / binomial on the proportion. The
-two native AICs live on different scales, so direct comparison is
-meaningless. To put all candidates on one scale we use the
+two log-likelihoods live on different scales, so direct comparison is
+meaningless. To put all the metrics on one scale we use the
 Poisson--binomial superposition identity: if
 $X\sim\mathrm{Pois}(\lambda_1)$ and $Y\sim\mathrm{Pois}(\lambda_2)$
 independently, then
@@ -358,19 +358,18 @@ proportion through logistic links,
    \\
   P_{\mathrm{pos}\to\mathrm{neg}}(t) &= \sigma\bigl(b_0 + b_1\,\pipos(t-1)\bigr),
 \end{align}
-with the other two entries of $P_t$ fixed by the row-sum constraint. At
-$a_1=b_1=0$ this exactly nests Model 2a, giving a clean LRT with
-$\mathrm{df}=2$.
+with the other two entries of $P_t$ fixed by the row-sum constraint.
 
-\paragraph{Optimization and validation.} Optimization is again Nelder--Mead
-with multi-start. We perform a synthetic recovery sanity-check for the
-multivariate Hawkes ($T=500$, parameters
-$\mu_{\mathrm{neg}}=3.0$, $\mu_{\mathrm{pos}}=5.0$ and a $2{\times}2$
-branching matrix); the multi-start fit recovers all six parameters with a
-maximum relative error of $20.3\%$, which we deemed acceptable for downstream
-inference. The single-start version of the optimizer failed badly on the
-same synthetic data (max relative error $1.48$), confirming the value of the
-multi-start.
+\paragraph{Optimization and validation.}
+We again use a multi-start Nelder--Mead procedure for parameter estimation.
+To validate the approach, we conducted a synthetic parameter-recovery experiment
+for the multivariate Hawkes model ($T=500$), with
+$\mu_{\mathrm{neg}}=3.0$, $\mu_{\mathrm{pos}}=5.0$, and a $2\times2$
+branching matrix. Across runs, the multi-start procedure recovered all six
+parameters with a maximum relative error of $20.3\%$, which we considered
+sufficient for downstream inference. By contrast, a single-start Nelder--Mead
+fit performed substantially worse on the same data (maximum relative error
+$148\%$), highlighting the importance of multi-start initialization.
 
 \subsection{Reproducibility checklist}
 \label{sec:repro}
