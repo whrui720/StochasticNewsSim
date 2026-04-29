@@ -140,7 +140,7 @@ publication date, and article body text. We left-join against the public
 NewsGuard domain-level reliability dataset on the article's URL domain
 (see \texttt{loader.py}), so that each article inherits the score of its
 publishing outlet. The continuous NewsGuard score is thresholded at the
-sample median to a binary reliability label $\{-1,+1\}$ (unreliable /
+median to yield a binary reliability label $\{-1,+1\}$ (unreliable /
 reliable). Event-relevant articles are selected by a keyword filter
 (per-event TOML configuration); missing dates are zero-filled so every model
 sees the same regular daily grid.
