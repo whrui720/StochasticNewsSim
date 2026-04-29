@@ -212,10 +212,10 @@ spectral-radius constraint on the branching matrix.
 \subsection{The AR(1)\,$\to$\,Markov bridge between Part A and Part B}
 \label{sec:bridge}
 
-A diagnostic on the Part-A Hawkes that profoundly shapes Part B is the
-\emph{profile log-likelihood of the kernel decay} $\beta$. Fixing $\beta$ on
+An important result of the Part-A Hawkes model that profoundly shapes Part B is the
+$\beta$-profile sweep. Fixing $\beta$ on
 a log-grid from $0.05$ to $32$ and re-optimizing $(\mu,n)$, the profile
-log-likelihood is monotone increasing in $\beta$ and plateaus for
+log-likelihood is monotonically increasing in $\beta$ and plateaus for
 $\beta\geq 10$ (Table~\ref{tab:beta-profile}). In the limit
 $\beta\to\infty$ the exponential kernel $e^{-\beta\Delta}$ collapses to a
 delta at lag $\Delta=1$, and the Hawkes intensity reduces to
@@ -223,18 +223,18 @@ delta at lag $\Delta=1$, and the Hawkes intensity reduces to
   \lambda(t)\approx \mu + n\,N(t-1).
   \label{eq:ar1}
 \end{equation}
-This is a discrete \emph{AR(1) model} for the intensity of the count
-process: the next-day rate depends only on yesterday's count, which is
-exactly the conditional independence structure of a first-order Markov chain.
+This results in a discrete AR(1) model for the count
+process: the next-day depends only on yesterday's count, which is
+precisely the structure of a first-order Markov chain.
 
 This empirical AR(1) collapse motivates the Part-B model family.
 For the binary reliability state, the natural generalization of
 \eqref{eq:ar1} is a first-order Markov chain on the state space
 $\{\mathrm{neg},\mathrm{pos}\}$, parameterized by a $2{\times}2$ transition
 matrix $P$ that may be \emph{homogeneous} (a single $P$), \emph{regime-switching}
-(two $P^{(\cdot)}$ matrices indexed by yesterday's majority state), or
-\emph{mean-field} (the entries of $P_t$ depend smoothly on yesterday's
-empirical proportion $\pipos(t-1)$). This thread is summarized in
+(two $P^{(\cdot)}$ matrices indexed by the previous day's majority state), or
+\emph{mean-field} (the entries of $P_t$ depend on yesterday's
+empirical proportion $\pipos(t-1)$). This is summarized in
 Figure~\ref{fig:ar1-bridge}.
 
 \begin{figure}[H]
@@ -287,7 +287,7 @@ Figure~\ref{fig:ar1-bridge}.
 $\beta$-profile sweep on daily-resolution counts plateaus in the AR(1)
 limit, and an AR(1) on a discrete state is precisely a first-order Markov
 chain. This motivates a Markov-chain family for the binary reliability
-state in Part B, scored against the multivariate-Hawkes count model on a
+state in Part B, scored against the multivariate-Hawkes model on a
 common conditional binomial likelihood.}
 \label{fig:ar1-bridge}
 \end{figure}
