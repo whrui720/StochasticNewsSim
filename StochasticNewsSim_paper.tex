@@ -374,16 +374,17 @@ $148\%$), highlighting the importance of multi-start initialization.
 \subsection{Reproducibility checklist}
 \label{sec:repro}
 
-The full analysis is reproducible from the provided repository: \texttt{loader.py}
-ingests CC-News and joins NewsGuard;
-\texttt{partAresults/\allowbreak fit\_models.py} fits SP, IHP, and Hawkes;
-\texttt{partAresults/\allowbreak fit\_hybrid.py} fits the hybrid;
-\texttt{partBresults/\allowbreak fit\_models\_partB.py} fits all four Part-B
+\begin{sloppypar}
+The full analysis is reproducible from the provided repository:
+\texttt{loader.py} ingests CC-News and joins NewsGuard;
+\mbox{\texttt{partAresults/fit\_models.py}} fits SP, IHP, and Hawkes;
+\mbox{\texttt{partAresults/fit\_hybrid.py}} fits the hybrid;
+\mbox{\texttt{partBresults/fit\_models\_partB.py}} fits all four Part-B
 candidates and produces all figures referenced below. Per-event
-configurations live in
-\texttt{events/*.toml}; the published code intentionally exposes the
-multi-start grid so that the synthetic-recovery diagnostic is reproducible
-on demand.
+configurations live in \texttt{events/*.toml}; the published code
+intentionally exposes the multi-start grid so that the synthetic-recovery
+diagnostic is reproducible on demand.
+\end{sloppypar}
 
 % =================================================================
 \section{Results}
